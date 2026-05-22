@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PTA 出欠管理</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+:root{--forest:#2e6b4f;--lg:#e8f4ec;--cream:#ede8de;--paper:#f7f2ea;--border:#cec8bc;--muted:#887f74;--amber:#c96a1e;--red:#b83232;--ink:#1e1a17;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;}
+/* topbar */
+.topbar{background:var(--forest);color:#fff;height:52px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.topbar h1{font-size:1rem;font-weight:700;letter-spacing:.04em;}
+.pill{font-size:.7rem;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 10px;}
+/* tabs */
+.tabs{display:flex;border-bottom:2px solid var(--border);background:#fff;}
+.tab{flex:1;padding:12px 4px;border:none;background:none;font-family:'Noto Sans JP',sans-serif;font-size:.78rem;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border-color .15s;}
+.tab.on{color:var(--forest);border-bottom-color:var(--forest);}
+/* page */
+.page{padding:18px 16px;max-width:640px;margin:0 auto;}
+/* card */
+.card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 6px rgba(0,0,0,.04);}
+.card-head{font-size:.95rem;font-weight:700;color:var(--forest);margin-bottom:14px;}
+/* form */
+.lbl{font-size:.76rem;color:var(--muted);margin-bottom:4px;}
+.inp{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.92rem;font-family:'Noto Sans JP',sans-serif;background:var(--paper);outline:none;}
+.inp:focus{border-color:var(--forest);}
+.row{display:flex;gap:8px;margin-bottom:10px;}
+.hr{border:none;border-top:1.5px solid var(--border);margin:14px 0;}
+.mt8{margin-top:8px;}
+/* buttons */
+.btn{padding:10px 18px;border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-weight:700;font-size:.86rem;cursor:pointer;white-space:nowrap;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-green{background:var(--forest);color:#fff;}
+.btn-amber{background:var(--amber);color:#fff;}
+.btn-ghost{background:var(--cream);color:var(--ink);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-sm{padding:6px 12px;font-size:.76rem;}
+.btn-full{width:100%;}
+/* list items */
+.m-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:var(--cream);margin-bottom:8px;cursor:pointer;border:1.5px solid transparent;}
+.m-item:hover{background:#e3ddd2;}
+.m-item.sel{background:var(--lg);border-color:var(--forest);}
+.m-name{font-weight:700;font-size:.92rem;}
+.m-sub{font-size:.74rem;color:var(--muted);margin-top:2px;}
+.badge{display:inline-block;background:var(--forest);color:#fff;border-radius:20px;padding:2px 10px;font-size:.7rem;font-weight:700;}
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px;}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--cream);border-radius:20px;padding:4px 10px;font-size:.82rem;}
+.chip-x{cursor:pointer;color:var(--muted);font-size:.8rem;}
+/* url box */
+.url-box{background:var(--cream);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-size:.78rem;word-break:break-all;color:var(--ink);margin:10px 0;}
+.url-label{font-size:.72rem;color:var(--muted);margin-bottom:4px;}
+/* stats */
+.stats{display:flex;gap:10px;margin-bottom:14px;}
+.stat{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.stat-n{font-size:1.8rem;font-weight:700;color:var(--forest);}
+.stat-l{font-size:.68rem;color:var(--muted);}
+/* att rows */
+.att-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:8px;margin-bottom:5px;font-size:.86rem;}
+.att-p{background:var(--lg);}
+.att-a{background:var(--cream);color:var(--muted);}
+.att-time{font-size:.7rem;color:var(--muted);}
+/* checkin page */
+.ci-wrap{min-height:100vh;background:linear-gradient(150deg,#e8f4ec,#f7f2ea 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 18px;}
+.ci-card{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:28px 22px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.08);}
+.ci-title{font-size:1.3rem;font-weight:700;color:var(--forest);text-align:center;margin-bottom:4px;}
+.ci-date{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:22px;}
+.ci-lbl{font-size:.82rem;color:var(--muted);text-align:center;margin-bottom:8px;}
+.ci-inp{width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:1.15rem;font-family:'Noto Sans JP',sans-serif;font-weight:700;text-align:center;background:var(--paper);outline:none;margin-bottom:10px;}
+.ci-inp:focus{border-color:var(--forest);}
+.ci-btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--forest);color:#fff;font-family:'Noto Sans JP',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;}
+.ci-btn:disabled{opacity:.35;cursor:not-allowed;}
+.ci-hint{font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px;}
+.sug-list{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.sug-item{padding:10px 14px;cursor:pointer;font-size:.9rem;border-bottom:1px solid var(--border);background:#fff;}
+.sug-item:last-child{border-bottom:none;}
+.sug-item:hover{background:var(--lg);}
+/* splash */
+.splash{position:fixed;inset:0;background:var(--forest);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:14px;z-index:999;animation:fi .2s ease;}
+@keyframes fi{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.splash-icon{font-size:4.5rem;}
+.splash-name{font-size:1.9rem;font-weight:700;}
+.splash-sub{font-size:.95rem;opacity:.8;}
+.err-splash{position:fixed;inset:0;background:#fff2f2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:999;padding:24px;text-align:center;}
+/* hidden */
+.hidden{display:none!important;}
+/* print */
+@media print{.topbar,.tabs,.no-print{display:none!important;}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const KEY='pta_v5';
+const DB={
+  load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch{return{};}},
+  save(d){localStorage.setItem(KEY,JSON.stringify(d));}
+};
+const params=new URLSearchParams(location.search);
+const MID=params.get('meeting');
+const $=id=>document.getElementById(id);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h)e.innerHTML=h;return e;};
+const fmt=d=>d?new Date(d).toLocaleString('ja-JP',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+const nowt=()=>new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+
+// ═══════════════════════════════
+// チェックインページ
+// ═══════════════════════════════
+if(MID){
+  $('app').innerHTML=`
+  <div class="ci-wrap">
+    <div style="font-size:2.2rem;margin-bottom:8px">🌿</div>
+    <div class="ci-card">
+      <div class="ci-title" id="ct"></div>
+      <div class="ci-date" id="cd"></div>
+      <div class="ci-lbl">お名前を入力してください</div>
+      <input class="ci-inp" id="ci" placeholder="例：山田 花子" autocomplete="off"/>
+      <div id="sg"></div>
+      <button class="ci-btn" id="cb" disabled>出席を記録する</button>
+      <div class="ci-hint" id="ch"></div>
+    </div>
+  </div>`;
+  const inp=$('ci'),btn=$('cb'),sg=$('sg');
+  const d=DB.load(),m=d[MID];
+  if(!m){$('ct').textContent='QRコードが無効です';$('ct').style.color='var(--red)';}
+  else{$('ct').textContent=m.title;$('cd').textContent=fmt(m.date);upCount();}
+  function upCount(){const d=DB.load(),m=d[MID];if(!m)return;$('ch').textContent='本日の出席者：'+Object.values(m.attendees).filter(s=>s==='present').length+'名';}
+  inp.oninput=()=>{
+    btn.disabled=!inp.value.trim();sg.innerHTML='';
+    if(!inp.value.trim()||!m)return;
+    const hits=Object.keys(m.registeredNames||{}).filter(n=>n.includes(inp.value.trim())&&m.attendees[n]!=='present').slice(0,5);
+    if(!hits.length)return;
+    const box=el('div','sug-list');
+    hits.forEach(n=>{const it=el('div','sug-item',n);it.onclick=()=>doCI(n);box.appendChild(it);});
+    sg.appendChild(box);
+  };
+  inp.onkeydown=e=>{if(e.key==='Enter')doCI(inp.value);};
+  btn.onclick=()=>doCI(inp.value);
+  function doCI(name){
+    const t=name.trim();if(!t)return;
+    const d=DB.load(),m=d[MID];if(!m)return;
+    if(m.attendees[t]==='present'){showErr('「'+t+'」さんはすでに出席済みです');return;}
+    m.attendees[t]='present';m.times=m.times||{};m.times[t]=nowt();
+    d[MID]=m;DB.save(d);inp.value='';btn.disabled=true;sg.innerHTML='';upCount();showOK(t);
+  }
+  function showOK(n){const s=el('div','splash');s.innerHTML='<div class="splash-icon">✅</div><div class="splash-name">'+n+' さん</div><div class="splash-sub">出席を記録しました！</div>';document.body.appendChild(s);setTimeout(()=>{s.remove();inp.focus();},2000);}
+  function showErr(msg){const s=el('div','err-splash');s.innerHTML='<div style="font-size:3rem">⚠️</div><p style="color:var(--red);font-weight:700">'+msg+'</p>';document.body.appendChild(s);setTimeout(()=>s.remove(),2200);}
+}
+
+// ═══════════════════════════════
+// 管理者画面
+// ═══════════════════════════════
+else{
+  $('app').innerHTML=`
+  <div class="topbar"><h1>🌿 PTA 出欠管理</h1><span class="pill">管理者</span></div>
+  <div class="tabs">
+    <button class="tab on" data-t="list">📋 一覧</button>
+    <button class="tab" data-t="create">➕ 新規</button>
+    <button class="tab" data-t="url">🔗 URL発行</button>
+    <button class="tab" data-t="att">📊 集計</button>
+  </div>
+  <div class="page">
+    <div id="t-list"></div>
+    <div id="t-create" class="hidden"></div>
+    <div id="t-url" class="hidden"></div>
+    <div id="t-att" class="hidden"></div>
+  </div>`;
+
+  let sel=null,members=[],timer=null;
+
+  // タブ切替
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>goTab(t.dataset.t));
+  function goTab(name){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===name));
+    ['list','create','url','att'].forEach(id=>$('t-'+id).classList.toggle('hidden',id!==name));
+    if(timer){clearInterval(timer);timer=null;}
+    if(name==='list')rList();
+    if(name==='url')rURL();
+    if(name==='att'){rAtt();timer=setInterval(rAtt,5000);}
+  }
+
+  // ── 一覧 ──────────────────────────
+  function rList(){
+    const d=DB.load(),box=$('t-list');box.innerHTML='';
+    const card=el('div','card');card.innerHTML='<div class="card-head">📋 登録済み会議</div>';
+    const ms=Object.values(d);
+    if(!ms.length){card.innerHTML+='<p style="color:var(--muted);font-size:.86rem">まだ会議がありません。「新規」から追加してください。</p>';}
+    ms.forEach(m=>{
+      const p=Object.values(m.attendees).filter(s=>s==='present').length;
+      const it=el('div','m-item'+(sel===m.id?' sel':''));
+      it.innerHTML=`<div><div class="m-name">${m.title}</div><div class="m-sub">${fmt(m.date)||'日時未設定'} ／ 出席${p}名</div></div>`+
+        `<div style="display:flex;gap:6px;align-items:center"><span class="badge">${p}名</span>`+
+        `<button class="btn btn-ghost btn-sm no-print" data-del="${m.id}">削除</button></div>`;
+      it.onclick=e=>{if(e.target.dataset.del)return;sel=m.id;rList();};
+      card.appendChild(it);
+    });
+    box.appendChild(card);
+    if(sel){
+      const row=el('div','no-print');row.style.cssText='display:flex;gap:8px;justify-content:flex-end;';
+      row.innerHTML='<button class="btn btn-ghost" id="goURL">URL発行 →</button><button class="btn btn-green" id="goAtt">集計を見る →</button>';
+      box.appendChild(row);
+      $('goURL').onclick=()=>goTab('url');
+      $('goAtt').onclick=()=>goTab('att');
+    }
+    box.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{
+      e.stopPropagation();if(!confirm('削除しますか？'))return;
+      const d=DB.load();delete d[b.dataset.del];DB.save(d);if(sel===b.dataset.del)sel=null;rList();
+    });
+  }
+
+  // ── 新規作成 ──────────────────────
+  $('t-create').innerHTML=`
+  <div class="card">
+    <div class="card-head">➕ 新しい会議を作成</div>
+    <div class="lbl">会議名</div>
+    <input class="inp" id="ntitle" placeholder="例：5月運営委員会" style="margin-bottom:10px"/>
+    <div class="lbl">日時</div>
+    <input class="inp" type="datetime-local" id="ndate" style="margin-bottom:14px"/>
+    <hr class="hr"/>
+    <div class="lbl">委員名を事前登録（任意）<span style="font-size:.7rem;color:var(--muted);margin-left:6px">入力時に候補表示されます</span></div>
+    <div class="row"><input class="inp" id="minp" placeholder="氏名を入力"/><button class="btn btn-ghost" id="madd">追加</button></div>
+    <div class="chips" id="chips"></div>
+    <button class="btn btn-green btn-full mt8" id="create">会議を作成する</button>
+  </div>`;
+  function rChips(){
+    const box=$('chips');box.innerHTML='';
+    members.forEach(m=>{const c=el('span','chip',m+'<span class="chip-x" data-n="'+m+'"> ✕</span>');box.appendChild(c);});
+    box.querySelectorAll('.chip-x').forEach(x=>x.onclick=()=>{members=members.filter(n=>n!==x.dataset.n);rChips();});
+  }
+  $('madd').onclick=()=>{const v=$('minp').value.trim();if(v&&!members.includes(v))members.push(v);$('minp').value='';rChips();};
+  $('minp').onkeydown=e=>{if(e.key==='Enter')$('madd').click();};
+  $('create').onclick=()=>{
+    const title=$('ntitle').value.trim();
+    if(!title){alert('会議名を入力してください');return;}
+    const id='m'+Date.now(),rn={};members.forEach(m=>{rn[m]=true;});
+    const d=DB.load();d[id]={id,title,date:$('ndate').value,attendees:{},times:{},registeredNames:rn};
+    DB.save(d);$('ntitle').value='';$('ndate').value='';members=[];rChips();
+    sel=id;goTab('url');
+  };
+
+  // ── URL発行 ──────────────────────
+  function rURL(){
+    const box=$('t-url');box.innerHTML='';
+    if(!sel){box.innerHTML='<div class="card"><p style="color:var(--muted)">一覧から会議を選択してください。</p></div>';return;}
+    const d=DB.load(),m=d[sel];if(!m)return;
+    const url=location.origin+location.pathname+'?meeting='+sel;
+    const card=el('div','card');
+    card.innerHTML=`
+      <div class="card-head">🔗 ${m.title} — チェックインURL</div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">このURLをスマホで開くとチェックイン画面が表示されます。<br>下記URLをQR作成サービスでQRコードにして会場に掲示してください。</p>
+      <div class="url-label">チェックインURL</div>
+      <div class="url-box" id="urltext">${url}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
+        <button class="btn btn-green btn-sm" id="ucopy">📋 URLをコピー</button>
+        <button class="btn btn-ghost btn-sm" id="uqr">🔗 QR作成サービスを開く</button>
+      </div>
+      <hr class="hr"/>
+      <div style="background:var(--lg);border-radius:10px;padding:12px;font-size:.8rem;line-height:1.7">
+        <b>QRコードの作り方</b><br>
+        ① 上の「URLをコピー」を押す<br>
+        ② 「QR作成サービスを開く」を押す<br>
+        ③ URLを貼り付けてQRを作成・印刷
+      </div>`;
+    box.appendChild(card);
+    $('ucopy').onclick=()=>navigator.clipboard.writeText(url).then(()=>alert('コピーしました！\nQR作成サービスに貼り付けてください。'));
+    $('uqr').onclick=()=>window.open('https://qr.quel.jp/?text='+encodeURIComponent(url),'_blank');
+  }
+
+  // ── 集計 ──────────────────────────
+  function rAtt(){
+    const box=$('t-att');box.innerHTML='';
+    if(!sel){box.innerHTML='<div class="card"><p style="color:var(--muted)">一覧から会議を選択してください。</p></div>';return;}
+    const d=DB.load(),m=d[sel];if(!m)return;
+    const atts=Object.entries(m.attendees);
+    const present=atts.filter(([,s])=>s==='present').length;
+    const total=atts.length;
+    // 統計
+    const stats=el('div','stats');
+    stats.innerHTML=`
+      <div class="stat"><div class="stat-n" style="color:var(--forest)">${present}</div><div class="stat-l">出席</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--muted)">${total-present}</div><div class="stat-l">未記録</div></div>
+      <div class="stat"><div class="stat-n">${total}</div><div class="stat-l">合計</div></div>`;
+    box.appendChild(stats);
+    // 一覧
+    const card=el('div','card');
+    card.innerHTML=`<div class="card-head">📊 ${m.title} — 出席一覧</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px" class="no-print">
+        <button class="btn btn-ghost btn-sm" id="aref">🔄 更新</button>
+        <button class="btn btn-amber btn-sm" id="acsv">📥 Excelで開く（CSV）</button>
+      </div>
+      <div id="alist"></div>`;
+    box.appendChild(card);
+    $('aref').onclick=rAtt;
+    $('acsv').onclick=exportCSV;
+    const list=$('alist');
+    if(!total){list.innerHTML='<p style="color:var(--muted);font-size:.86rem">まだ誰も出席登録していません。</p>';return;}
+    atts.sort(([,a],[,b])=>(b==='present')-(a==='present')).forEach(([name,status])=>{
+      const row=el('div','att-row '+(status==='present'?'att-p':'att-a'));
+      row.innerHTML=`<span>${name}</span><div style="display:flex;gap:8px;align-items:center">`+
+        (m.times?.[name]?`<span class="att-time">${m.times[name]}</span>`:'')+
+        `<span style="font-weight:700;font-size:.8rem;color:${status==='present'?'var(--forest)':'var(--muted)'}">${status==='present'?'✅ 出席':'⬜ 未記録'}</span></div>`;
+      list.appendChild(row);
+    });
+  }
+
+  function exportCSV(){
+    const d=DB.load(),m=d[sel];if(!m)return;
+    const rows=[['氏名','出欠','チェックイン時刻']];
+    Object.entries(m.attendees).sort(([,a],[,b])=>(b==='present')-(a==='present')).forEach(([n,s])=>{
+      rows.push([n, s==='present'?'出席':'未記録', m.times?.[n]||'']);
+    });
+    const bom='\uFEFF';
+    const csv=bom+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\r\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=m.title+'_出欠.csv';a.click();
+  }
+
+  rList();
+}
+</script>
+</body>
+</html>

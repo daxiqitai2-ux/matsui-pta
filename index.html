@@ -51,20 +51,22 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--i
 .att-p{background:var(--lg);}
 .att-a{background:var(--cream);color:var(--muted);}
 .att-time{font-size:.7rem;color:var(--muted);}
+/* チェックインページ */
 .ci-wrap{min-height:100vh;background:linear-gradient(150deg,#e8f4ec,#f7f2ea 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 18px;}
-.ci-card{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:28px 22px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.08);}
+.ci-card{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:28px 22px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.08);}
 .ci-title{font-size:1.3rem;font-weight:700;color:var(--forest);text-align:center;margin-bottom:4px;}
 .ci-date{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:22px;}
-.ci-lbl{font-size:.82rem;color:var(--muted);text-align:center;margin-bottom:8px;}
-.ci-inp{width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:1.15rem;font-family:'Noto Sans JP',sans-serif;font-weight:700;text-align:center;background:var(--paper);outline:none;margin-bottom:10px;}
-.ci-inp:focus{border-color:var(--forest);}
-.ci-btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--forest);color:#fff;font-family:'Noto Sans JP',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;}
-.ci-btn:disabled{opacity:.35;cursor:not-allowed;}
-.ci-hint{font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px;}
-.sug-list{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;}
-.sug-item{padding:10px 14px;cursor:pointer;font-size:.9rem;border-bottom:1px solid var(--border);background:#fff;}
-.sug-item:last-child{border-bottom:none;}
-.sug-item:hover{background:var(--lg);}
+.ci-lbl{font-size:.88rem;color:var(--muted);text-align:center;margin-bottom:14px;}
+.ci-hint{font-size:.72rem;color:var(--muted);text-align:center;margin-top:14px;}
+/* クラスグリッド */
+.class-section{margin-bottom:16px;}
+.class-year{font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:.05em;}
+.class-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.class-btn{padding:14px 8px;border:2px solid var(--border);border-radius:12px;background:var(--paper);font-family:'Noto Sans JP',sans-serif;font-size:1rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:center;transition:background .15s,border-color .15s,transform .1s;}
+.class-btn:hover{background:var(--lg);border-color:var(--forest);}
+.class-btn:active{transform:scale(.95);}
+.class-btn.nakayoshi{grid-column:1/-1;font-size:.95rem;}
+/* splash */
 .splash{position:fixed;inset:0;background:var(--forest);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:14px;z-index:999;animation:fi .2s ease;}
 @keyframes fi{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
 .splash-icon{font-size:4.5rem;}
@@ -79,6 +81,16 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--i
 <body>
 <div id="app"></div>
 <script>
+const CLASSES=[
+  {year:'1年生',list:['1-1','1-2']},
+  {year:'2年生',list:['2-1','2-2']},
+  {year:'3年生',list:['3-1','3-2']},
+  {year:'4年生',list:['4-1','4-2']},
+  {year:'5年生',list:['5-1','5-2']},
+  {year:'6年生',list:['6-1','6-2','6-3']},
+  {year:'特別支援',list:['なかよし']},
+];
+
 const params=new URLSearchParams(location.search);
 const MID=params.get('meeting');
 const $=id=>document.getElementById(id);
@@ -86,7 +98,6 @@ const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h)e.i
 const fmt=d=>d?new Date(d).toLocaleString('ja-JP',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
 const nowt=()=>new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
 
-// API helpers
 const api={
   async get(path){const r=await fetch('/api'+path);return r.json();},
   async post(path,body){const r=await fetch('/api'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json();},
@@ -104,16 +115,13 @@ if(MID){
     <div class="ci-card">
       <div class="ci-title" id="ct">読み込み中...</div>
       <div class="ci-date" id="cd"></div>
-      <div class="ci-lbl" id="cl" style="display:none">お名前を入力してください</div>
-      <input class="ci-inp hidden" id="ci" placeholder="例：山田 花子" autocomplete="off"/>
-      <div id="sg"></div>
-      <button class="ci-btn hidden" id="cb" disabled>出席を記録する</button>
+      <div class="ci-lbl hidden" id="cl">クラスを選んでください</div>
+      <div id="cg"></div>
       <div class="ci-hint" id="ch"></div>
     </div>
   </div>`;
 
   let meeting=null;
-  const inp=$('ci'),btn=$('cb'),sg=$('sg');
 
   async function init(){
     try{
@@ -125,55 +133,67 @@ if(MID){
       }
       $('ct').textContent=meeting.title;
       $('cd').textContent=fmt(meeting.date);
-      $('cl').style.display='';
-      inp.classList.remove('hidden');
-      btn.classList.remove('hidden');
+      $('cl').classList.remove('hidden');
+      renderClasses();
       upCount();
     }catch(e){
       $('ct').textContent='読み込みエラー';
       $('ct').style.color='var(--red)';
     }
   }
-  init();
+
+  function renderClasses(){
+    const cg=$('cg');cg.innerHTML='';
+    CLASSES.forEach(({year,list})=>{
+      const sec=el('div','class-section');
+      sec.innerHTML='<div class="class-year">'+year+'</div>';
+      const grid=el('div','class-grid');
+      list.forEach(cls=>{
+        const btn=el('button','class-btn'+(cls==='なかよし'?' nakayoshi':''),cls);
+        btn.onclick=()=>doCI(cls);
+        grid.appendChild(btn);
+      });
+      sec.appendChild(grid);
+      cg.appendChild(sec);
+    });
+  }
 
   function upCount(){
     if(!meeting)return;
-    const n=Object.values(meeting.attendees||{}).filter(s=>s==='present').length;
-    $('ch').textContent='本日の出席者：'+n+'名';
+    const total=Object.values(meeting.attendees||{}).reduce((s,n)=>s+n,0);
+    $('ch').textContent='本日の出席記録：'+total+'件';
   }
 
-  inp.oninput=()=>{
-    btn.disabled=!inp.value.trim();sg.innerHTML='';
-    if(!inp.value.trim()||!meeting)return;
-    const hits=Object.keys(meeting.registeredNames||{}).filter(n=>n.includes(inp.value.trim())&&(meeting.attendees||{})[n]!=='present').slice(0,5);
-    if(!hits.length)return;
-    const box=el('div','sug-list');
-    hits.forEach(n=>{const it=el('div','sug-item',n);it.onclick=()=>doCI(n);box.appendChild(it);});
-    sg.appendChild(box);
-  };
-  inp.onkeydown=e=>{if(e.key==='Enter')doCI(inp.value);};
-  btn.onclick=()=>doCI(inp.value);
-
-  async function doCI(name){
-    const t=name.trim();if(!t||!meeting)return;
-    if((meeting.attendees||{})[t]==='present'){showErr('「'+t+'」さんはすでに出席済みです');return;}
-    btn.disabled=true;
+  async function doCI(cls){
+    if(!meeting)return;
     meeting.attendees=meeting.attendees||{};
     meeting.times=meeting.times||{};
-    meeting.attendees[t]='present';
-    meeting.times[t]=nowt();
+    const prev=meeting.attendees[cls]||0;
+    meeting.attendees[cls]=prev+1;
+    meeting.times[cls]=meeting.times[cls]||[];
+    meeting.times[cls].push(nowt());
     try{
       await api.put('/meetings/'+MID,{attendees:meeting.attendees,times:meeting.times});
-      inp.value='';sg.innerHTML='';upCount();showOK(t);
+      upCount();showOK(cls);
     }catch(e){
       showErr('エラーが発生しました');
-    }finally{
-      btn.disabled=false;
     }
   }
 
-  function showOK(n){const s=el('div','splash');s.innerHTML='<div class="splash-icon">✅</div><div class="splash-name">'+n+' さん</div><div class="splash-sub">出席を記録しました！</div>';document.body.appendChild(s);setTimeout(()=>{s.remove();inp.focus();},2000);}
-  function showErr(msg){const s=el('div','err-splash');s.innerHTML='<div style="font-size:3rem">⚠️</div><p style="color:var(--red);font-weight:700">'+msg+'</p>';document.body.appendChild(s);setTimeout(()=>s.remove(),2200);}
+  function showOK(cls){
+    const s=el('div','splash');
+    s.innerHTML='<div class="splash-icon">✅</div><div class="splash-name">'+cls+'</div><div class="splash-sub">出席を記録しました！</div>';
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),2000);
+  }
+  function showErr(msg){
+    const s=el('div','err-splash');
+    s.innerHTML='<div style="font-size:3rem">⚠️</div><p style="color:var(--red);font-weight:700">'+msg+'</p>';
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),2200);
+  }
+
+  init();
 }
 
 // ═══════════════════════════════
@@ -195,7 +215,7 @@ else{
     <div id="t-att" class="hidden"></div>
   </div>`;
 
-  let sel=null,members=[],timer=null;
+  let sel=null,timer=null;
 
   document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>goTab(t.dataset.t));
   function goTab(name){
@@ -218,10 +238,10 @@ else{
     const ms=Object.values(data);
     if(!ms.length){card.innerHTML+='<p style="color:var(--muted);font-size:.86rem">まだ会議がありません。「新規」から追加してください。</p>';}
     ms.forEach(m=>{
-      const p=Object.values(m.attendees||{}).filter(s=>s==='present').length;
+      const total=Object.values(m.attendees||{}).reduce((s,n)=>s+n,0);
       const it=el('div','m-item'+(sel===m.id?' sel':''));
-      it.innerHTML=`<div><div class="m-name">${m.title}</div><div class="m-sub">${fmt(m.date)||'日時未設定'} ／ 出席${p}名</div></div>`+
-        `<div style="display:flex;gap:6px;align-items:center"><span class="badge">${p}名</span>`+
+      it.innerHTML=`<div><div class="m-name">${m.title}</div><div class="m-sub">${fmt(m.date)||'日時未設定'} ／ 出席${total}件</div></div>`+
+        `<div style="display:flex;gap:6px;align-items:center"><span class="badge">${total}件</span>`+
         `<button class="btn btn-ghost btn-sm no-print" data-del="${m.id}">削除</button></div>`;
       it.onclick=e=>{if(e.target.dataset.del)return;sel=m.id;rList();};
       card.appendChild(it);
@@ -249,26 +269,15 @@ else{
     <input class="inp" id="ntitle" placeholder="例：5月運営委員会" style="margin-bottom:10px"/>
     <div class="lbl">日時</div>
     <input class="inp" type="datetime-local" id="ndate" style="margin-bottom:14px"/>
-    <hr class="hr"/>
-    <div class="lbl">委員名を事前登録（任意）<span style="font-size:.7rem;color:var(--muted);margin-left:6px">入力時に候補表示されます</span></div>
-    <div class="row"><input class="inp" id="minp" placeholder="氏名を入力"/><button class="btn btn-ghost" id="madd">追加</button></div>
-    <div class="chips" id="chips"></div>
     <button class="btn btn-green btn-full mt8" id="create">会議を作成する</button>
   </div>`;
 
-  function rChips(){
-    const box=$('chips');box.innerHTML='';
-    members.forEach(m=>{const c=el('span','chip',m+'<span class="chip-x" data-n="'+m+'"> ✕</span>');box.appendChild(c);});
-    box.querySelectorAll('.chip-x').forEach(x=>x.onclick=()=>{members=members.filter(n=>n!==x.dataset.n);rChips();});
-  }
-  $('madd').onclick=()=>{const v=$('minp').value.trim();if(v&&!members.includes(v))members.push(v);$('minp').value='';rChips();};
-  $('minp').onkeydown=e=>{if(e.key==='Enter')$('madd').click();};
   $('create').onclick=async()=>{
     const title=$('ntitle').value.trim();
     if(!title){alert('会議名を入力してください');return;}
-    const id='m'+Date.now(),rn={};members.forEach(m=>{rn[m]=true;});
-    await api.post('/meetings',{id,title,date:$('ndate').value,attendees:{},times:{},registeredNames:rn});
-    $('ntitle').value='';$('ndate').value='';members=[];rChips();
+    const id='m'+Date.now();
+    await api.post('/meetings',{id,title,date:$('ndate').value,attendees:{},times:{}});
+    $('ntitle').value='';$('ndate').value='';
     sel=id;goTab('url');
   };
 
@@ -280,9 +289,9 @@ else{
     const card=el('div','card');
     card.innerHTML=`
       <div class="card-head">🔗 チェックインURL</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">このURLをスマホで開くとチェックイン画面が表示されます。</p>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">このURLをスマホで開くとクラス選択画面が表示されます。</p>
       <div class="url-label">チェックインURL</div>
-      <div class="url-box" id="urltext">${url}</div>
+      <div class="url-box">${url}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
         <button class="btn btn-green btn-sm" id="ucopy">📋 URLをコピー</button>
         <button class="btn btn-ghost btn-sm" id="uqr">🔗 QR作成サービスを開く</button>
@@ -305,17 +314,15 @@ else{
     if(!sel){box.innerHTML='<div class="card"><p style="color:var(--muted)">一覧から会議を選択してください。</p></div>';return;}
     const m=await api.get('/meetings/'+sel);
     if(m.error){box.innerHTML='<div class="card"><p style="color:var(--muted)">会議が見つかりません。</p></div>';return;}
-    const atts=Object.entries(m.attendees||{});
-    const present=atts.filter(([,s])=>s==='present').length;
-    const total=atts.length;
+    const atts=m.attendees||{};
+    const total=Object.values(atts).reduce((s,n)=>s+n,0);
+
     const stats=el('div','stats');
-    stats.innerHTML=`
-      <div class="stat"><div class="stat-n" style="color:var(--forest)">${present}</div><div class="stat-l">出席</div></div>
-      <div class="stat"><div class="stat-n" style="color:var(--muted)">${total-present}</div><div class="stat-l">未記録</div></div>
-      <div class="stat"><div class="stat-n">${total}</div><div class="stat-l">合計</div></div>`;
+    stats.innerHTML=`<div class="stat"><div class="stat-n">${total}</div><div class="stat-l">合計出席件数</div></div>`;
     box.appendChild(stats);
+
     const card=el('div','card');
-    card.innerHTML=`<div class="card-head">📊 ${m.title} — 出席一覧</div>
+    card.innerHTML=`<div class="card-head">📊 ${m.title} — クラス別出席</div>
       <div style="display:flex;gap:8px;margin-bottom:14px" class="no-print">
         <button class="btn btn-ghost btn-sm" id="aref">🔄 更新</button>
         <button class="btn btn-amber btn-sm" id="acsv">📥 Excelで開く（CSV）</button>
@@ -324,21 +331,29 @@ else{
     box.appendChild(card);
     $('aref').onclick=rAtt;
     $('acsv').onclick=()=>exportCSV(m);
+
     const list=$('alist');
-    if(!total){list.innerHTML='<p style="color:var(--muted);font-size:.86rem">まだ誰も出席登録していません。</p>';return;}
-    atts.sort(([,a],[,b])=>(b==='present')-(a==='present')).forEach(([name,status])=>{
-      const row=el('div','att-row '+(status==='present'?'att-p':'att-a'));
-      row.innerHTML=`<span>${name}</span><div style="display:flex;gap:8px;align-items:center">`+
-        (m.times?.[name]?`<span class="att-time">${m.times[name]}</span>`:'')+
-        `<span style="font-weight:700;font-size:.8rem;color:${status==='present'?'var(--forest)':'var(--muted)'}">${status==='present'?'✅ 出席':'⬜ 未記録'}</span></div>`;
+    // 全クラスを表示（記録0でも表示）
+    const allClasses=CLASSES.flatMap(g=>g.list);
+    allClasses.forEach(cls=>{
+      const count=atts[cls]||0;
+      const times=(m.times||{})[cls]||[];
+      const row=el('div','att-row '+(count>0?'att-p':'att-a'));
+      row.innerHTML=`<span style="font-weight:700">${cls}</span>`+
+        `<div style="display:flex;gap:10px;align-items:center">`+
+        (times.length?`<span class="att-time">${times.join(', ')}</span>`:'')+
+        `<span style="font-weight:700;font-size:.9rem;color:${count>0?'var(--forest)':'var(--muted)'}">${count>0?'✅ '+count+'件':'⬜ 未記録'}</span></div>`;
       list.appendChild(row);
     });
   }
 
   function exportCSV(m){
-    const rows=[['氏名','出欠','チェックイン時刻']];
-    Object.entries(m.attendees||{}).sort(([,a],[,b])=>(b==='present')-(a==='present')).forEach(([n,s])=>{
-      rows.push([n,s==='present'?'出席':'未記録',m.times?.[n]||'']);
+    const atts=m.attendees||{};
+    const rows=[['クラス','出席件数','チェックイン時刻']];
+    CLASSES.flatMap(g=>g.list).forEach(cls=>{
+      const count=atts[cls]||0;
+      const times=((m.times||{})[cls]||[]).join(' / ');
+      rows.push([cls, count, times]);
     });
     const csv='\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\r\n');
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});

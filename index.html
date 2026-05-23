@@ -270,7 +270,7 @@ else{
     if(timer){clearInterval(timer);timer=null;}
     if(name==='list')rList();
     if(name==='url')rURL();
-    if(name==='att'){rAtt();timer=setInterval(rAtt,5000);}
+    if(name==='att'){rAtt();timer=setInterval(rAttSilent,5000);}
   }
 
   // ── 一覧 ──────────────────────────
@@ -401,6 +401,45 @@ else{
         `<span class="att-time">${r.time||''}</span>`;
       list.appendChild(row);
     });
+  }
+
+  // スクロール位置を保持したまま数値だけ更新
+  async function rAttSilent(){
+    if(!sel)return;
+    const m=await api.get('/meetings/'+sel);
+    if(m.error)return;
+    const records=m.records||[];
+    const total=records.length;
+    // 合計更新
+    const statN=document.querySelector('#t-att .stat-n');
+    if(statN)statN.textContent=total;
+    // クラス別更新
+    const byClass={};
+    records.forEach(r=>{if(!byClass[r.cls])byClass[r.cls]=[];byClass[r.cls].push(r);});
+    const allCls=CLASSES.flatMap(g=>g.list);
+    const clsRows=document.querySelectorAll('#cls-sum .att-row');
+    clsRows.forEach((row,i)=>{
+      const cls=allCls[i];if(!cls)return;
+      const recs=byClass[cls]||[];
+      row.className='att-row '+(recs.length?'att-p':'att-a');
+      const span=row.querySelector('span:last-child');
+      if(span)span.textContent=recs.length?recs.length+'名':'⬜ 未記録';
+      if(span)span.style.color=recs.length?'var(--forest)':'var(--muted)';
+    });
+    // 個人一覧更新（追記のみ）
+    const list=$('alist');
+    if(list){
+      const existing=list.children.length;
+      if(records.length>existing){
+        for(let i=existing;i<records.length;i++){
+          const r=records[i];
+          const row=el('div','att-row att-p');
+          row.innerHTML=`<div><span style="font-weight:700">${r.name}</span><span style="font-size:.78rem;color:var(--muted);margin-left:8px">${r.cls}</span></div>`+
+            `<span class="att-time">${r.time||''}</span>`;
+          list.appendChild(row);
+        }
+      }
+    }
   }
 
   function exportCSV(m){

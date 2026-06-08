@@ -510,9 +510,32 @@ else{
   }
 
   function exportCSV(m){
-    const records=m.records||[];
+    // PDF順：役職の順序
+    const ROLE_ORDER=['校長','教頭','教務主任','会長','副会長','監事','会計幹事','幹事','地区委員','学年委員','市子連','まついちまつり'];
+    // 幹事の担当順序
+    const TANTO_ORDER=['110番','人権','広報','サポート','その他'];
+    // クラス順序
+    const CLS_ORDER=['1-1','1-2','2-1','2-2','3-1','3-2','4-1','4-2','5-1','5-2','6-1','6-2','6-3','なかよし'];
+
+    function roleKey(r){
+      // r.role は「幹事 / 広報」または「校長」などの形式
+      const parts=(r.role||'').split(' / ');
+      const roleName=parts[0].trim();
+      const tantoName=parts[1]?parts[1].trim():'';
+      const ri=ROLE_ORDER.indexOf(roleName);
+      const ti=tantoName?TANTO_ORDER.indexOf(tantoName):-1;
+      const ci=CLS_ORDER.indexOf(r.cls);
+      return [ri<0?99:ri, ti<0?99:ti, ci<0?99:ci];
+    }
+
+    const sorted=[...(m.records||[])].sort((a,b)=>{
+      const ak=roleKey(a),bk=roleKey(b);
+      for(let i=0;i<ak.length;i++){if(ak[i]!==bk[i])return ak[i]-bk[i];}
+      return 0;
+    });
+
     const rows=[['役職・担当','クラス','保護者名','チェックイン時刻']];
-    records.forEach(r=>rows.push([r.role||'',r.cls,r.name,r.time||'']));
+    sorted.forEach(r=>rows.push([r.role||'',r.cls,r.name,r.time||'']));
     const csv='\uFEFF'+rows.map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\r\n');
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=m.title+'_出欠.csv';a.click();

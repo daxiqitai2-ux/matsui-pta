@@ -292,35 +292,63 @@ if(MID){
       `<button class="back-btn" id="backBtn">← クラス選択に戻る</button>`+
       `<div style="text-align:center;margin-bottom:14px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">${label}</div>`+
       `<div class="ci-lbl">お名前を入力してください</div>`+
-      `<input class="ci-inp" id="nameInp" placeholder="例：山田 花子" autocomplete="off"/>`+
-      `<button class="ci-btn" id="submitBtn" disabled>出席を記録する</button>`;
+      `<input class="ci-inp" id="nameInp" placeholder="例：山田 花子" autocomplete="off"/>`;
     $('backBtn').onclick=showStepClass;
     const inp=$('nameInp');
-    const btn=$('submitBtn');
-    inp.oninput=()=>{btn.disabled=!inp.value.trim();};
-    inp.onkeydown=e=>{if(e.key==='Enter'&&inp.value.trim())doCI(inp.value);};
-    btn.onclick=()=>doCI(inp.value);
+    inp.oninput=()=>{
+      const hasName=inp.value.trim();
+      const att=$('attBtn'),abs=$('absBtn');
+      if(att){att.disabled=!hasName;abs.disabled=!hasName;}
+    };
+    const btnWrap=document.createElement('div');
+    btnWrap.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;';
+    btnWrap.innerHTML=
+      `<button id="attBtn" class="ci-btn" disabled style="background:var(--forest)">✅ 出席</button>`+
+      `<button id="absBtn" class="ci-btn" disabled style="background:var(--amber)">❌ 欠席</button>`;
+    body.appendChild(btnWrap);
+    $('attBtn').onclick=()=>doCI(inp.value,'出席');
+    $('absBtn').onclick=()=>{
+      if(!inp.value.trim())return;
+      // 欠席理由欄を表示
+      const existing=$('absReason');
+      if(existing){existing.remove();return;}
+      const wrap=document.createElement('div');
+      wrap.id='absReason';
+      wrap.style.cssText='margin-top:10px;';
+      wrap.innerHTML=
+        `<div class="ci-lbl" style="text-align:left;margin-bottom:6px">欠席理由（任意）</div>`+
+        `<input class="ci-inp" id="reasonInp" placeholder="例：体調不良、仕事など" autocomplete="off" style="margin-bottom:8px"/>`+
+        `<button id="absSubmit" class="ci-btn" style="background:var(--amber)">❌ 欠席で記録する</button>`;
+      btnWrap.insertAdjacentElement('afterend',wrap);
+      $('absSubmit').onclick=()=>doCI(inp.value,'欠席',$('reasonInp').value);
+      setTimeout(()=>$('reasonInp').focus(),100);
+    };
+    inp.onkeydown=e=>{if(e.key==='Enter'&&inp.value.trim())doCI(inp.value,'出席');};
     setTimeout(()=>inp.focus(),100);
   }
 
-  async function doCI(name){
+  async function doCI(name,status,reason){
     const t=name.trim();if(!t||!meeting)return;
     const roleLabel=selTanto?selRole.name+' / '+selTanto:selRole.name;
     meeting.attendees=meeting.attendees||{};
     meeting.records=meeting.records||[];
-    meeting.records.push({cls:selClass,name:t,role:roleLabel,time:nowt()});
-    meeting.attendees[selClass]=(meeting.attendees[selClass]||0)+1;
+    const rec={cls:selClass,name:t,role:roleLabel,status:status,time:nowt()};
+    if(reason&&reason.trim())rec.reason=reason.trim();
+    meeting.records.push(rec);
+    if(status==='出席')meeting.attendees[selClass]=(meeting.attendees[selClass]||0)+1;
     try{
       await api.put('/meetings/'+MID,{attendees:meeting.attendees,records:meeting.records});
       upCount();
-      showOK(t,roleLabel,selClass);
+      showOK(t,roleLabel,selClass,status);
       setTimeout(()=>showStepRole(),2100);
     }catch(e){showErr('エラーが発生しました');}
   }
 
-  function showOK(name,role,cls){
+  function showOK(name,role,cls,status){
+    const isAbs=status==='欠席';
     const s=el('div','splash');
-    s.innerHTML=`<div class="splash-icon">✅</div><div class="splash-name">${name} さん</div><div class="splash-sub">${role} ／ ${cls}</div>`;
+    s.style.background=isAbs?'var(--amber)':'var(--forest)';
+    s.innerHTML=`<div class="splash-icon">${isAbs?'❌':'✅'}</div><div class="splash-name">${name} さん</div><div class="splash-sub">${role} ／ ${cls} ／ ${status}</div>`;
     document.body.appendChild(s);setTimeout(()=>s.remove(),2000);
   }
   function showErr(msg){
@@ -490,12 +518,18 @@ else{
     if(!total){list.innerHTML='<p style="color:var(--muted);font-size:.86rem">まだ誰も出席登録していません。</p>';return;}
     records.forEach(r=>{
       const row=el('div','att-row att-p');
+      const isAbs=r.status==='欠席';
+      row.className='att-row '+(isAbs?'att-a':'att-p');
       row.innerHTML=`<div>`+
         `<span style="font-weight:700">${r.name}</span>`+
         `${r.role?`<span style="font-size:.72rem;color:var(--muted);margin-left:6px">${r.role}</span>`:''}`+
         `<span style="font-size:.72rem;color:var(--muted);margin-left:6px">${r.cls}</span>`+
         `</div>`+
-        `<span class="att-time">${r.time||''}</span>`;
+        `<div style="display:flex;align-items:center;gap:6px">`+
+        `<span style="font-size:.72rem;font-weight:700;color:${isAbs?'var(--amber)':'var(--forest)'}">${isAbs?'❌ 欠席':'✅ 出席'}</span>`+
+        (r.reason?`<span style="font-size:.7rem;color:var(--muted);margin-left:4px">(${r.reason})</span>`:'')+
+        `<span class="att-time">${r.time||''}</span>`+
+        `</div>`;
       list.appendChild(row);
     });
   }
@@ -557,8 +591,8 @@ else{
       return 0;
     });
 
-    const rows=[['役職・担当','クラス','保護者名','チェックイン時刻']];
-    sorted.forEach(r=>rows.push([r.role||'',r.cls,r.name,r.time||'']));
+    const rows=[['役職・担当','クラス','保護者名','出欠','欠席理由','チェックイン時刻']];
+    sorted.forEach(r=>rows.push([r.role||'',r.cls,r.name,r.status||'出席',r.reason||'',r.time||'']));
     // クラス列（index=1）はExcelの日付自動変換を防ぐため ="X-Y" 形式で出力
     const csv='\uFEFF'+rows.map((r,ri)=>r.map((c,ci)=>{
       const v=(c||'').toString().replace(/"/g,'""');

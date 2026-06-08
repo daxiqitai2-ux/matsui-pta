@@ -536,7 +536,12 @@ else{
 
     const rows=[['役職・担当','クラス','保護者名','チェックイン時刻']];
     sorted.forEach(r=>rows.push([r.role||'',r.cls,r.name,r.time||'']));
-    const csv='\uFEFF'+rows.map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\r\n');
+    // クラス列（index=1）はExcelの日付自動変換を防ぐため ="X-Y" 形式で出力
+    const csv='\uFEFF'+rows.map((r,ri)=>r.map((c,ci)=>{
+      const v=(c||'').toString().replace(/"/g,'""');
+      if(ri>0&&ci===1)return `="${v}"`;
+      return `"${v}"`;
+    }).join(',')).join('\r\n');
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=m.title+'_出欠.csv';a.click();
   }

@@ -1,3 +1,431 @@
+A<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PTA 出欠管理</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+:root{--forest:#2e6b4f;--lg:#e8f4ec;--cream:#ede8de;--paper:#f7f2ea;--border:#cec8bc;--muted:#887f74;--amber:#c96a1e;--red:#b83232;--ink:#1e1a17;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;}
+.topbar{background:var(--forest);color:#fff;height:52px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.topbar h1{font-size:.95rem;font-weight:700;}
+.pill{font-size:.7rem;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 10px;}
+.tabs{display:flex;border-bottom:2px solid var(--border);background:#fff;}
+.tab{flex:1;padding:12px 4px;border:none;background:none;font-family:'Noto Sans JP',sans-serif;font-size:.75rem;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;}
+.tab.on{color:var(--forest);border-bottom-color:var(--forest);}
+.page{padding:18px 16px;max-width:640px;margin:0 auto;}
+.card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 6px rgba(0,0,0,.04);}
+.card-head{font-size:.95rem;font-weight:700;color:var(--forest);margin-bottom:14px;}
+.lbl{font-size:.76rem;color:var(--muted);margin-bottom:4px;}
+.inp{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.92rem;font-family:'Noto Sans JP',sans-serif;background:var(--paper);outline:none;}
+.inp:focus{border-color:var(--forest);}
+.textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;font-family:'Noto Sans JP',sans-serif;background:var(--paper);outline:none;resize:vertical;min-height:100px;line-height:1.7;}
+.textarea:focus{border-color:var(--forest);}
+.row{display:flex;gap:8px;margin-bottom:10px;}
+.hr{border:none;border-top:1.5px solid var(--border);margin:14px 0;}
+.mt8{margin-top:8px;}
+.btn{padding:10px 18px;border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-weight:700;font-size:.86rem;cursor:pointer;white-space:nowrap;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-green{background:var(--forest);color:#fff;}
+.btn-amber{background:var(--amber);color:#fff;}
+.btn-ghost{background:var(--cream);color:var(--ink);}
+.btn-sm{padding:6px 12px;font-size:.76rem;}
+.btn-full{width:100%;}
+.m-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:var(--cream);margin-bottom:8px;cursor:pointer;border:1.5px solid transparent;}
+.m-item:hover{background:#e3ddd2;}
+.m-item.sel{background:var(--lg);border-color:var(--forest);}
+.m-name{font-weight:700;font-size:.92rem;}
+.m-sub{font-size:.74rem;color:var(--muted);margin-top:2px;}
+.badge{display:inline-block;background:var(--forest);color:#fff;border-radius:20px;padding:2px 10px;font-size:.7rem;font-weight:700;}
+.url-box{background:var(--cream);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-size:.78rem;word-break:break-all;color:var(--ink);margin:10px 0;}
+.stats{display:flex;gap:10px;margin-bottom:14px;}
+.stat{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.stat-n{font-size:1.8rem;font-weight:700;color:var(--forest);}
+.stat-l{font-size:.68rem;color:var(--muted);}
+.att-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:8px;margin-bottom:5px;font-size:.86rem;}
+.att-p{background:var(--lg);}
+.att-a{background:var(--cream);color:var(--muted);}
+.att-time{font-size:.7rem;color:var(--muted);}
+/* メモ表示 */
+.memo-box{background:var(--lg);border:1.5px solid #a8d5b5;border-radius:12px;padding:14px 16px;margin-bottom:16px;}
+.memo-box-title{font-size:.78rem;font-weight:700;color:var(--forest);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.memo-box-body{font-size:.86rem;line-height:1.8;white-space:pre-wrap;color:var(--ink);}
+/* チェックイン */
+.ci-wrap{min-height:100vh;background:linear-gradient(150deg,#e8f4ec,#f7f2ea 60%);display:flex;flex-direction:column;align-items:center;padding:24px 16px 40px;}
+.ci-card{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:22px 20px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.08);margin-bottom:14px;}
+.ci-title{font-size:1.2rem;font-weight:700;color:var(--forest);text-align:center;margin-bottom:4px;}
+.ci-date{font-size:.76rem;color:var(--muted);text-align:center;margin-bottom:16px;}
+.step-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.step-back{background:none;border:none;color:var(--forest);font-size:1.2rem;cursor:pointer;padding:4px;}
+.step-title{font-size:.9rem;font-weight:700;color:var(--ink);}
+.step-sub{font-size:.74rem;color:var(--muted);}
+.sel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.sel-btn{padding:14px 8px;border:2px solid var(--border);border-radius:12px;background:#fff;font-family:'Noto Sans JP',sans-serif;font-size:.86rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:center;line-height:1.4;transition:background .12s,border-color .12s;}
+.sel-btn:hover{background:var(--lg);border-color:var(--forest);}
+.name-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.name-btn{padding:13px 16px;border:2px solid var(--border);border-radius:10px;background:#fff;font-family:'Noto Sans JP',sans-serif;font-size:.95rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:left;transition:background .12s,border-color .12s;}
+.name-btn:hover{background:var(--lg);border-color:var(--forest);}
+.name-btn.done{background:var(--lg);border-color:var(--forest);color:var(--forest);}
+.name-btn:disabled{opacity:.4;cursor:not-allowed;}
+.ci-hint{font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px;}
+/* メモ更新カード */
+.memo-update-card{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:20px;width:100%;max-width:400px;box-shadow:0 4px 16px rgba(0,0,0,.06);}
+.memo-update-title{font-size:.88rem;font-weight:700;color:var(--forest);margin-bottom:10px;}
+/* スプラッシュ */
+.splash{position:fixed;inset:0;background:var(--forest);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:14px;z-index:999;animation:fi .2s ease;}
+@keyframes fi{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.splash-icon{font-size:4.5rem;}
+.splash-name{font-size:1.9rem;font-weight:700;}
+.splash-sub{font-size:.95rem;opacity:.8;}
+.err-splash{position:fixed;inset:0;background:#fff2f2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:999;padding:24px;text-align:center;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;font-size:.84rem;z-index:999;animation:fi .2s ease;}
+.hidden{display:none!important;}
+@media print{.topbar,.tabs,.no-print{display:none!important;}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const ROSTER={
+  '校長':{'':['野口 高志']},
+  '教頭':{'':['笹岡 智聡']},
+  '教務主任':{'':['山崎 周之']},
+  '監':{'':['（未登録）']},
+  '会計幹事':{'':['（未登録）']},
+  '幹事':{'':['（未登録）']},
+  '地区委員':{'本町2':['鶴井 真澄','大橋 加須美']},
+  '学年委員':{'6年':['利根川 志穂','吉澤 瑠璃子','今井 瑛理子'],'1年':['若生 紗也加','勝田 彩','里美','黒澤 麻里子']},
+  '市子連':{'':['原口 美沙希','高橋 香菜']},
+  'まついちまつり':{'':['岡崎 弥生','目黒 三紗子','岩附 祐樹']},
+};
+
+const API_BASE='https://crimson-credit-a3df.daxiqitai2.workers.dev';
+const KV_KEY='matsui_pta_v2';
+
+async function kvGet(){
+  try{
+    const res=await fetch(`${API_BASE}/api/get?key=${encodeURIComponent(KV_KEY)}`);
+    if(!res.ok)throw new Error('通信エラー');
+    const data=await res.json();
+    return data.value?JSON.parse(data.value):{};
+  }catch(e){showToast('読込失敗: '+e.message);return{};}
+}
+async function kvSet(d){
+  const res=await fetch(`${API_BASE}/api/set`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:KV_KEY,value:JSON.stringify(d)})
+  });
+  if(!res.ok)throw new Error('保存エラー');
+}
+
+let _cache=null;
+const DB={
+  load(){return _cache||{};},
+  save(d){_cache=d;kvSet(d).catch(e=>showToast('保存失敗: '+e.message));}
+};
+const params=new URLSearchParams(location.search);
+const MID=params.get('meeting');
+const $=id=>document.getElementById(id);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h)e.innerHTML=h;return e;};
+const fmt=d=>d?new Date(d).toLocaleString('ja-JP',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+const nowt=()=>new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+function showToast(msg){const t=el('div','toast',msg);document.body.appendChild(t);setTimeout(()=>t.remove(),2000);}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━
+// チェックインページ
+// ━━━━━━━━━━━━━━━━━━━━━━━━
+if(MID){
+  $('app').innerHTML=`<div class="ci-wrap" id="ci-wrap"><div style="text-align:center;padding:40px;color:var(--muted)">読み込み中...</div></div>`;
+  const wrap=$('ci-wrap');
+
+  let step='role',selRole='',selTanto='';
+
+  // KVからデータ読み込み後に描画
+  kvGet().then(d=>{
+    _cache=d;
+    const m=d[MID];
+    if(!m){
+      wrap.innerHTML='<div class="ci-card"><div class="ci-title" style="color:var(--red)">QRコードが無効です</div></div>';
+    }else{
+      render();
+    }
+  });
+
+  function render(){
+    wrap.innerHTML='';
+    const d=DB.load(),m=d[MID];
+    // ヘッダーカード
+    const hcard=el('div','ci-card');
+    hcard.innerHTML=`<div class="ci-title">🌿 ${m.title}</div><div class="ci-date">${fmt(m.date)||''}</div>`;
+    // メモ表示
+    if(m.memo&&m.memo.trim()){
+      const mb=el('div','memo-box');
+      mb.innerHTML=`<div class="memo-box-title">📋 連絡事項・議題</div><div class="memo-box-body">${escHtml(m.memo)}</div>`;
+      hcard.appendChild(mb);
+    }
+    hcard.innerHTML+=`<div class="ci-hint">本日の出席者：${countPresent(d)}名</div>`;
+    wrap.appendChild(hcard);
+
+    // チェックインカード
+    const ccard=el('div','ci-card');
+    if(step==='role'){
+      ccard.innerHTML='<div style="font-size:.82rem;color:var(--muted);text-align:center;margin-bottom:14px">役職を選んでください</div>';
+      const grid=el('div','sel-grid');
+      Object.keys(ROSTER).forEach(r=>{
+        const btn=el('button','sel-btn',r);
+        btn.onclick=()=>{selRole=r;const ts=Object.keys(ROSTER[r]);if(ts.length===1&&ts[0]===''){selTanto='';step='name';}else step='tanto';render();};
+        grid.appendChild(btn);
+      });
+      ccard.appendChild(grid);
+    } else if(step==='tanto'){
+      const hdr=el('div','step-header');
+      hdr.innerHTML=`<button class="step-back" id="bk">←</button><div><div class="step-title">${selRole}</div><div class="step-sub">担当を選んでください</div></div>`;
+      ccard.appendChild(hdr);
+      const grid=el('div','sel-grid');
+      Object.keys(ROSTER[selRole]).forEach(t=>{
+        const btn=el('button','sel-btn',t);
+        btn.onclick=()=>{selTanto=t;step='name';render();};
+        grid.appendChild(btn);
+      });
+      ccard.appendChild(grid);
+    } else if(step==='name'){
+      const tanto=selTanto||Object.keys(ROSTER[selRole])[0];
+      const names=ROSTER[selRole][tanto]||[];
+      const d=DB.load(),m=d[MID];
+      const hdr=el('div','step-header');
+      hdr.innerHTML=`<button class="step-back" id="bk">←</button><div><div class="step-title">${selRole}${selTanto?' / '+selTanto:''}</div><div class="step-sub">お名前を選んでください</div></div>`;
+      ccard.appendChild(hdr);
+      const list=el('div','name-list');
+      names.forEach(name=>{
+        const isDone=m&&m.attendees[name]==='present';
+        const btn=el('button','name-btn'+(isDone?' done':''),name+(isDone?' ✅':''));
+        if(isDone)btn.disabled=true;
+        btn.onclick=()=>doCI(name);
+        list.appendChild(btn);
+      });
+      ccard.appendChild(list);
+      // 代理出席
+      const proxy=el('div','');
+      proxy.innerHTML='<div style="font-size:.74rem;color:var(--muted);margin-bottom:6px">代理出席の場合</div>';
+      const prow=el('div','row');
+      prow.innerHTML='<input class="inp" id="px" placeholder="代理の方のお名前（例：山田 花子 代）"/><button class="btn btn-ghost btn-sm" id="pb">記録</button>';
+      proxy.appendChild(prow);
+      ccard.appendChild(proxy);
+      $('pb')?$('pb').onclick=()=>{const v=$('px').value.trim();if(!v){alert('お名前を入力してください');return;}doCI(v);}:null;
+    }
+    wrap.appendChild(ccard);
+    // 戻るボタンのイベント
+    if($('bk'))$('bk').onclick=()=>{
+      if(step==='tanto')step='role';
+      else if(step==='name'){const ts=Object.keys(ROSTER[selRole]);if(ts.length===1&&ts[0]==='')step='role';else step='tanto';}
+      render();
+    };
+
+    // メモ更新カード（常に表示）
+    const d2=DB.load(),m2=d2[MID];
+    const mcard=el('div','memo-update-card');
+    mcard.innerHTML=`<div class="memo-update-title">📝 連絡事項・メモを更新</div>
+      <textarea class="textarea" id="memo-ta" placeholder="議題や連絡事項を入力してください&#10;例）・次回は7月15日　・会費について　など">${escHtml(m2.memo||'')}</textarea>
+      <button class="btn btn-green btn-full mt8" id="memo-save">更新して共有する</button>`;
+    wrap.appendChild(mcard);
+    $('memo-save').onclick=()=>{
+      const v=$('memo-ta').value;
+      const d=DB.load(),m=d[MID];if(!m)return;
+      m.memo=v;d[MID]=m;DB.save(d);
+      showToast('✅ メモを更新しました');render();
+    };
+  }
+
+  function countPresent(d){const m=d[MID];if(!m)return 0;return Object.values(m.attendees).filter(s=>s==='present').length;}
+  function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  function doCI(name){
+    const d=DB.load(),m=d[MID];if(!m)return;
+    if(m.attendees[name]==='present'){showErr('「'+name+'」さんはすでに出席済みです');return;}
+    m.attendees[name]='present';m.times=m.times||{};m.times[name]=nowt();
+    m.roles=m.roles||{};m.roles[name]=selRole+(selTanto?' / '+selTanto:'');
+    d[MID]=m;DB.save(d);
+    showOK(name);
+    setTimeout(()=>{step='role';selRole='';selTanto='';render();},2000);
+  }
+  function showOK(n){const s=el('div','splash');s.innerHTML='<div class="splash-icon">✅</div><div class="splash-name">'+n+' さん</div><div class="splash-sub">出席を記録しました！</div>';document.body.appendChild(s);setTimeout(()=>s.remove(),2000);}
+  function showErr(msg){const s=el('div','err-splash');s.innerHTML='<div style="font-size:3rem">⚠️</div><p style="color:var(--red);font-weight:700">'+msg+'</p>';document.body.appendChild(s);setTimeout(()=>s.remove(),2200);}
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━
+// 管理者画面
+// ━━━━━━━━━━━━━━━━━━━━━━━━
+else{
+  $('app').innerHTML=`
+  <div class="topbar"><h1>🌿 松山第一小学校 PTA出欠管理</h1><span class="pill">管理者</span></div>
+  <div class="tabs">
+    <button class="tab on" data-t="list">📋 一覧</button>
+    <button class="tab" data-t="create">➕ 新規</button>
+    <button class="tab" data-t="url">🔗 URL発行</button>
+    <button class="tab" data-t="att">📊 集計</button>
+  </div>
+  <div class="page">
+    <div id="t-list"></div>
+    <div id="t-create" class="hidden"></div>
+    <div id="t-url" class="hidden"></div>
+    <div id="t-att" class="hidden"></div>
+  </div>`;
+
+  let sel=null,timer=null;
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>goTab(t.dataset.t));
+
+  // KVからデータ読み込み
+  $('t-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">読み込み中...</div>';
+  kvGet().then(d=>{ _cache=d; rList(); });
+
+  function goTab(name){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===name));
+    ['list','create','url','att'].forEach(id=>$('t-'+id).classList.toggle('hidden',id!==name));
+    if(timer){clearInterval(timer);timer=null;}
+    if(name==='list')rList();
+    if(name==='url')rURL();
+    if(name==='att'){rAtt();timer=setInterval(async()=>{_cache=await kvGet();rAtt();},10000);}
+  }
+
+  function rList(){
+    const d=DB.load(),box=$('t-list');box.innerHTML='';
+    const card=el('div','card');card.innerHTML='<div class="card-head">📋 登録済み会議</div>';
+    const ms=Object.values(d);
+    if(!ms.length)card.innerHTML+='<p style="color:var(--muted);font-size:.86rem">まだ会議がありません。「新規」から追加してください。</p>';
+    ms.forEach(m=>{
+      const p=Object.values(m.attendees).filter(s=>s==='present').length;
+      const it=el('div','m-item'+(sel===m.id?' sel':''));
+      it.innerHTML=`<div><div class="m-name">${m.title}</div><div class="m-sub">${fmt(m.date)||'日時未設定'} ／ 出席${p}名</div></div>`+
+        `<div style="display:flex;gap:6px;align-items:center"><span class="badge">${p}名</span><button class="btn btn-ghost btn-sm no-print" data-del="${m.id}">削除</button></div>`;
+      it.onclick=e=>{if(e.target.dataset.del)return;sel=m.id;rList();};
+      card.appendChild(it);
+    });
+    box.appendChild(card);
+    if(sel){
+      const row=el('div','no-print');row.style.cssText='display:flex;gap:8px;justify-content:flex-end;';
+      row.innerHTML='<button class="btn btn-ghost" id="goURL">URL発行 →</button><button class="btn btn-green" id="goAtt">集計を見る →</button>';
+      box.appendChild(row);
+      $('goURL').onclick=()=>goTab('url');
+      $('goAtt').onclick=()=>goTab('att');
+    }
+    box.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{
+      e.stopPropagation();if(!confirm('削除しますか？'))return;
+      const d=DB.load();delete d[b.dataset.del];DB.save(d);if(sel===b.dataset.del)sel=null;rList();
+    });
+  }
+
+  $('t-create').innerHTML=`
+  <div class="card">
+    <div class="card-head">➕ 新しい会議を作成</div>
+    <div class="lbl">会議名</div>
+    <input class="inp" id="ntitle" placeholder="例：6月運営委員会" style="margin-bottom:10px"/>
+    <div class="lbl">日時</div>
+    <input class="inp" type="datetime-local" id="ndate" style="margin-bottom:14px"/>
+    <hr class="hr"/>
+    <div class="lbl">連絡事項・議題（任意）</div>
+    <textarea class="textarea" id="nmemo" placeholder="例）・次回は7月15日&#10;・会費の件について&#10;・役員改選のお知らせ"></textarea>
+    <button class="btn btn-green btn-full mt8" id="create">会議を作成する</button>
+  </div>`;
+  $('create').onclick=()=>{
+    const title=$('ntitle').value.trim();
+    if(!title){alert('会議名を入力してください');return;}
+    const id='m'+Date.now();
+    const d=DB.load();
+    d[id]={id,title,date:$('ndate').value,memo:$('nmemo').value,attendees:{},times:{},roles:{}};
+    DB.save(d);$('ntitle').value='';$('ndate').value='';$('nmemo').value='';
+    sel=id;goTab('url');
+  };
+
+  function rURL(){
+    const box=$('t-url');box.innerHTML='';
+    if(!sel){box.innerHTML='<div class="card"><p style="color:var(--muted)">一覧から会議を選択してください。</p></div>';return;}
+    const d=DB.load(),m=d[sel];if(!m)return;
+    const url=location.origin+location.pathname+'?meeting='+sel;
+    const card=el('div','card');
+    card.innerHTML=`
+      <div class="card-head">🔗 ${m.title} — チェックインURL</div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">このURLをQRコードにして会場に掲示してください。</p>
+      <div class="url-label">チェックインURL</div>
+      <div class="url-box">${url}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" class="no-print">
+        <button class="btn btn-green btn-sm" id="ucopy">📋 URLをコピー</button>
+        <button class="btn btn-ghost btn-sm" id="uqr">🔗 QR作成サービスを開く</button>
+      </div>
+      <hr class="hr"/>
+      <div class="card-head" style="margin-bottom:10px">📝 連絡事項・議題を編集</div>
+      <textarea class="textarea" id="memo-inp" placeholder="議題や連絡事項を入力&#10;QRを読み取った全員に表示されます">${m.memo||''}</textarea>
+      <button class="btn btn-green btn-full mt8" id="memo-save">保存して共有する</button>`;
+    box.appendChild(card);
+    $('ucopy').onclick=()=>navigator.clipboard.writeText(url).then(()=>alert('コピーしました！'));
+    $('uqr').onclick=()=>window.open('https://qr.quel.jp/?text='+encodeURIComponent(url),'_blank');
+    $('memo-save').onclick=()=>{
+      const v=$('memo-inp').value;
+      const d=DB.load(),m=d[sel];if(!m)return;
+      m.memo=v;d[sel]=m;DB.save(d);
+      showToast('✅ 保存しました');
+    };
+  }
+
+  function rAtt(){
+    const box=$('t-att');box.innerHTML='';
+    if(!sel){box.innerHTML='<div class="card"><p style="color:var(--muted)">一覧から会議を選択してください。</p></div>';return;}
+    const d=DB.load(),m=d[sel];if(!m)return;
+    const atts=Object.entries(m.attendees);
+    const present=atts.filter(([,s])=>s==='present').length;
+    const total=atts.length;
+    const stats=el('div','stats');
+    stats.innerHTML=`
+      <div class="stat"><div class="stat-n" style="color:var(--forest)">${present}</div><div class="stat-l">出席</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--muted)">${total-present}</div><div class="stat-l">未記録</div></div>
+      <div class="stat"><div class="stat-n">${total}</div><div class="stat-l">合計</div></div>`;
+    box.appendChild(stats);
+    // メモ表示
+    if(m.memo&&m.memo.trim()){
+      const mb=el('div','card');
+      mb.innerHTML=`<div class="card-head">📋 連絡事項・議題</div><div style="font-size:.86rem;line-height:1.8;white-space:pre-wrap">${m.memo}</div>`;
+      box.appendChild(mb);
+    }
+    const card=el('div','card');
+    card.innerHTML=`<div class="card-head">📊 ${m.title} — 出席一覧</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px" class="no-print">
+        <button class="btn btn-ghost btn-sm" id="aref">🔄 更新</button>
+        <button class="btn btn-amber btn-sm" id="acsv">📥 Excelで開く（CSV）</button>
+      </div>
+      <div id="alist"></div>`;
+    box.appendChild(card);
+    $('aref').onclick=async()=>{_cache=await kvGet();rAtt();};
+    $('acsv').onclick=exportCSV;
+    const list=$('alist');
+    if(!total){list.innerHTML='<p style="color:var(--muted);font-size:.86rem">まだ誰も出席登録していません。</p>';return;}
+    atts.sort(([,a],[,b])=>(b==='present')-(a==='present')).forEach(([name,status])=>{
+      const row=el('div','att-row '+(status==='present'?'att-p':'att-a'));
+      const role=m.roles?.[name]||'';
+      row.innerHTML=`<div><span style="font-weight:700">${name}</span>${role?`<span style="font-size:.72rem;color:var(--muted);margin-left:6px">${role}</span>`:''}</div>`+
+        `<div style="display:flex;gap:8px;align-items:center">`+
+        (m.times?.[name]?`<span class="att-time">${m.times[name]}</span>`:'')+
+        `<span style="font-weight:700;font-size:.8rem;color:${status==='present'?'var(--forest)':'var(--muted)'}">${status==='present'?'✅ 出席':'⬜ 未記録'}</span></div>`;
+      list.appendChild(row);
+    });
+  }
+
+  function exportCSV(){
+    const d=DB.load(),m=d[sel];if(!m)return;
+    const rows=[['氏名','役職・担当','出欠','チェックイン時刻']];
+    Object.entries(m.attendees).sort(([,a],[,b])=>(b==='present')-(a==='present')).forEach(([n,s])=>{
+      rows.push([n,m.roles?.[n]||'',s==='present'?'出席':'未記録',m.times?.[n]||'']);
+    });
+    if(m.memo){rows.push([]);rows.push(['【連絡事項・議題】']);rows.push([m.memo]);}
+    const csv='\uFEFF'+rows.map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\r\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=m.title+'_出欠.csv';a.click();
+  }
+
+}
+</script>
+</body>
+</html>
 <!DOCTYPE html>
 <html lang="ja">
 <head>

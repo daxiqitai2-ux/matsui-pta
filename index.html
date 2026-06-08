@@ -151,6 +151,7 @@ if(MID){
     <div class="ci-card">
       <div class="ci-title" id="ct">読み込み中...</div>
       <div class="ci-date" id="cd"></div>
+      <div id="ci-memo"></div>
       <div id="ci-body"></div>
       <div class="ci-hint" id="ch"></div>
     </div>
@@ -165,9 +166,20 @@ if(MID){
       if(meeting.error){$('ct').textContent='QRコードが無効です';$('ct').style.color='var(--red)';return;}
       $('ct').textContent=meeting.title;
       $('cd').textContent=fmt(meeting.date);
+      showMemo();
       upCount();
       showStepRole();
     }catch(e){$('ct').textContent='読み込みエラー';$('ct').style.color='var(--red)';}
+  }
+
+  function showMemo(){
+    const memo=meeting&&meeting.memo?meeting.memo.trim():'';
+    const box=$('ci-memo');if(!box)return;
+    if(!memo){box.innerHTML='';return;}
+    box.innerHTML=`<div style="background:var(--lg);border:1.5px solid #a8d5b5;border-radius:12px;padding:12px 14px;margin-bottom:16px;">
+      <div style="font-size:.76rem;font-weight:700;color:var(--forest);margin-bottom:6px;">📋 連絡事項・議題</div>
+      <div style="font-size:.86rem;line-height:1.8;white-space:pre-wrap;color:var(--ink)">${memo.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+    </div>`;
   }
 
   function upCount(){

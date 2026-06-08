@@ -110,7 +110,7 @@ const ROLES=[
   {name:'会計幹事', hasTanto:false},
   {name:'幹事',     hasTanto:true, tantos:['110番','人権','人権・給食','広報','サポート']},
   {name:'地区委員', hasTanto:true, tantos:['箭弓町','松山A','松山B','松葉1','松葉2','松葉3','日吉','材木A','材木B','本町1','本町2']},
-  {name:'学年委員', hasTanto:true, tantos:['1年','6年']},
+  {name:'学年委員', hasTanto:false, classes:['1-1','1-2','6-1','6-2','6-3']},
   {name:'市子連',   hasTanto:false},
   {name:'まついちまつり', hasTanto:false},
 ];
@@ -255,18 +255,29 @@ if(MID){
       `<div id="cg"></div>`;
     $('backBtn').onclick=()=>{selRole.hasTanto?showStepTanto():showStepRole();};
     const cg=$('cg');
-    CLASSES.forEach(({year,list})=>{
-      const sec=el('div','class-section');
-      sec.innerHTML='<div class="class-year">'+year+'</div>';
+    if(selRole.classes){
+      // 専用クラスリスト（学年委員など）
       const grid=el('div','class-grid');
-      list.forEach(cls=>{
-        const btn=el('button','class-btn'+(cls==='なかよし'?' nakayoshi':''),cls);
+      selRole.classes.forEach(cls=>{
+        const btn=el('button','class-btn',cls);
         btn.onclick=()=>{selClass=cls;showStepName();};
         grid.appendChild(btn);
       });
-      sec.appendChild(grid);
-      cg.appendChild(sec);
-    });
+      cg.appendChild(grid);
+    }else{
+      CLASSES.forEach(({year,list})=>{
+        const sec=el('div','class-section');
+        sec.innerHTML='<div class="class-year">'+year+'</div>';
+        const grid=el('div','class-grid');
+        list.forEach(cls=>{
+          const btn=el('button','class-btn'+(cls==='なかよし'?' nakayoshi':''),cls);
+          btn.onclick=()=>{selClass=cls;showStepName();};
+          grid.appendChild(btn);
+        });
+        sec.appendChild(grid);
+        cg.appendChild(sec);
+      });
+    }
   }
 
   // ── ステップ4：名前入力 ──
@@ -525,7 +536,7 @@ else{
     // PDF順：役職の順序
     const ROLE_ORDER=['校長','教頭','教務主任','会長','副会長','監事','会計幹事','幹事','地区委員','学年委員','市子連','まついちまつり'];
     // 幹事の担当順序
-    const TANTO_ORDER=['110番','人権','人権・給食','広報','サポート','箭弓町','松山A','松山B','松葉1','松葉2','松葉3','日吉','材木A','材木B','本町1','本町2','1年','6年'];
+    const TANTO_ORDER=['110番','人権','人権・給食','広報','サポート','箭弓町','松山A','松山B','松葉1','松葉2','松葉3','日吉','材木A','材木B','本町1','本町2'];
     // クラス順序
     const CLS_ORDER=['1-1','1-2','2-1','2-2','3-1','3-2','4-1','4-2','5-1','5-2','6-1','6-2','6-3','なかよし'];
 

@@ -507,6 +507,14 @@ else{
     const records=m.records||[];
     const total=records.length;
 
+    // 連絡事項表示
+    if(m.memo&&m.memo.trim()){
+      const memoCard=el('div','card');
+      memoCard.innerHTML=`<div class="card-head">📋 連絡事項・議題</div>`+
+        `<div style="font-size:.86rem;line-height:1.8;white-space:pre-wrap;color:var(--ink)">${m.memo.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
+      box.appendChild(memoCard);
+    }
+
     const stats=el('div','stats');
     stats.innerHTML=`<div class="stat"><div class="stat-n" id="total-n">${total}</div><div class="stat-l">合計出席者数</div></div>`;
     box.appendChild(stats);

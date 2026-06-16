@@ -259,9 +259,8 @@ if(MID){
       </div>`+
       `<div class="ci-lbl">下の子のクラスを選んでください</div>`+
       `<div id="cg"></div>`+
-      `<button class="ci-btn" id="skipBtn" style="background:var(--muted);margin-top:12px;font-size:.85rem;">兄弟姉妹なし・スキップ</button>`;
+      `;
     $('backBtn').onclick=()=>{selRole.hasTanto?showStepTanto():showStepRole();};
-    $('skipBtn').onclick=()=>{selClass2=null;showStepChildName();};
     const cg=$('cg');
     if(selRole.classes){
       const grid=el('div','class-grid');

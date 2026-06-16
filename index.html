@@ -291,15 +291,15 @@ if(MID){
   function showStepChildName(){
     const body=$('ci-body');
     const clsLabel=selClass2
-      ?`<span class="selected-badge">${selClass}</span><span style="margin:0 4px;color:var(--muted)">＋</span><span class="selected-badge">${selClass2}</span>`
-      :`<span class="selected-badge">${selClass}</span>`;
+      ?`<span class="selected-badge">${selClass2}</span>`
+      :`<span style="font-size:.82rem;color:var(--muted)">（クラスなし）</span>`;
     body.innerHTML=stepBar(selRole.hasTanto?4:3)+
       `<button class="back-btn" id="backBtn">← クラス選択に戻る</button>`+
       `<div style="text-align:center;margin-bottom:14px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">${clsLabel}</div>`+
       `<div class="ci-lbl">お子さんの名前を入力してください</div>`+
       `<input class="ci-inp" id="childInp" placeholder="例：山田 太郎" autocomplete="off" style="margin-bottom:10px"/>`+
       `<button class="ci-btn" id="nextBtn" disabled>次へ（保護者名）</button>`;
-    $('backBtn').onclick=showStepClass2;
+    $('backBtn').onclick=showStepClass;
     const inp=$('childInp');
     const next=$('nextBtn');
     inp.oninput=()=>{next.disabled=!inp.value.trim();};
@@ -312,8 +312,8 @@ if(MID){
   function showStepParentName(childName){
     const body=$('ci-body');
     const clsLabel=selClass2
-      ?`<span class="selected-badge">${selClass}</span><span style="margin:0 4px;color:var(--muted)">＋</span><span class="selected-badge">${selClass2}</span>`
-      :`<span class="selected-badge">${selClass}</span>`;
+      ?`<span class="selected-badge">${selClass2}</span>`
+      :`<span style="font-size:.82rem;color:var(--muted)">（クラスなし）</span>`;
     body.innerHTML=stepBar(selRole.hasTanto?4:3)+
       `<button class="back-btn" id="backBtn">← 子供の名前に戻る</button>`+
       `<div style="text-align:center;margin-bottom:8px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">${clsLabel}</div>`+
@@ -358,7 +358,7 @@ if(MID){
     const parent=parentName.trim();
     if(!child||!parent||!meeting)return;
     const roleLabel=selTanto?selRole.name+' / '+selTanto:selRole.name;
-    const clsInfo=selClass2?selClass+'・'+selClass2:selClass;
+    const clsInfo=selClass2||'なし';
     meeting.attendees=meeting.attendees||{};
     meeting.records=meeting.records||[];
     const rec={cls:clsInfo,childName:child,name:parent,role:roleLabel,status:status,time:nowt()};

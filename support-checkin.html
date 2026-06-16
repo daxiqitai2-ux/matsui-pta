@@ -203,15 +203,15 @@ if(MID){
   function showStepChildName(){
     const body=$('ci-body');
     const clsLabel=selClass2
-      ?`<span class="selected-badge">${selClass}</span><span style="margin:0 4px;color:var(--muted)">＋</span><span class="selected-badge">${selClass2}</span>`
-      :`<span class="selected-badge">${selClass}</span>`;
+      ?`<span class="selected-badge">${selClass2}</span>`
+      :`<span style="font-size:.82rem;color:var(--muted)">（クラスなし）</span>`;
     body.innerHTML=stepBar(2,3)+
       `<button class="back-btn" id="backBtn">← クラス選択に戻る</button>`+
       `<div style="text-align:center;margin-bottom:14px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">${clsLabel}</div>`+
       `<div class="ci-lbl">② お子さんの名前を入力してください</div>`+
       `<input class="ci-inp" id="childInp" placeholder="例：山田 太郎" autocomplete="off" style="margin-bottom:10px"/>`+
       `<button class="ci-btn" id="nextBtn" disabled>次へ（保護者名）</button>`;
-    $('backBtn').onclick=showStepClass2;
+    $('backBtn').onclick=showStepClass;
     const inp=$('childInp');
     const next=$('nextBtn');
     inp.oninput=()=>{next.disabled=!inp.value.trim();};
@@ -270,7 +270,7 @@ if(MID){
     const parent=parentName.trim();
     if(!child||!parent||!meeting)return;
     meeting.records=meeting.records||[];
-    const clsInfo=selClass2?selClass+'・'+selClass2:selClass;
+    const clsInfo=selClass2||'なし';
     const rec={cls:clsInfo,childName:child,name:parent,status:status,time:nowt()};
     if(reason&&reason.trim())rec.reason=reason.trim();
     meeting.records.push(rec);
@@ -516,7 +516,7 @@ else{
     const tn=$('total-n');if(tn)tn.textContent=records.length;
     const list=$('alist');
     if(list&&records.length>list.children.length){
-      const sorted=[...records].sort((a,b)=>CLS_ORDER.indexOf(a.cls)-CLS_ORDER.indexOf(b.cls));
+      const sorted=[...records].sort((a,b)=>CLS_ORDER.indexOf(a.cls||'')-CLS_ORDER.indexOf(b.cls||''));
       list.innerHTML='';
       sorted.forEach(r=>{
         const isAbs=r.status==='欠席';
@@ -530,7 +530,7 @@ else{
 
   function exportCSV(m){
     const records=m.records||[];
-    const sorted=[...records].sort((a,b)=>CLS_ORDER.indexOf(a.cls)-CLS_ORDER.indexOf(b.cls));
+    const sorted=[...records].sort((a,b)=>CLS_ORDER.indexOf(a.cls||'')-CLS_ORDER.indexOf(b.cls||''));
     const rows=[['クラス','お子さんの名前','保護者名','出欠','欠席理由','チェックイン時刻']];
     sorted.forEach(r=>rows.push([r.cls,r.childName||'',r.name,r.status||'出席',r.reason||'',r.time||'']));
     const csv='\uFEFF'+rows.map((r,ri)=>r.map((c,ci)=>{

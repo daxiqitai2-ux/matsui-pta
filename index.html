@@ -243,11 +243,9 @@ if(MID){
   }
 
   // ── ステップ3：クラス選択 ──
-  let selClass2=null; // 下の子のクラス
-
   function showStepClass(){
     const stepNum=selRole.hasTanto?3:2;
-    selClass=null;selClass2=null;
+    selClass=null;
     const body=$('ci-body');
     const label=selRole.hasTanto
       ?`<span class="selected-badge">${selRole.name}</span><span class="selected-badge" style="margin-left:6px">${selTanto}</span>`
@@ -256,9 +254,9 @@ if(MID){
       `<button class="back-btn" id="backBtn">← ${selRole.hasTanto?'担当':'役職'}選択に戻る</button>`+
       `<div style="text-align:center;margin-bottom:12px">${label}</div>`+
       `<div style="background:var(--lg);border:1.5px solid #a8d5b5;border-radius:10px;padding:10px 14px;font-size:.8rem;color:var(--forest);margin-bottom:14px;text-align:center;">
-        👨‍👩‍👧‍👦 兄弟姉妹のいる方は下の子のクラスを選択してください
+        👨‍👩‍👧‍👦 兄弟姉妹のいる方は上の子のクラスを選択してください
       </div>`+
-      `<div class="ci-lbl">下の子のクラスを選んでください</div>`+
+      `<div class="ci-lbl">上の子のクラスを選んでください</div>`+
       `<div id="cg"></div>`;
     $('backBtn').onclick=()=>{selRole.hasTanto?showStepTanto():showStepRole();};
     const cg=$('cg');
@@ -266,7 +264,7 @@ if(MID){
       const grid=el('div','class-grid');
       selRole.classes.forEach(cls=>{
         const btn=el('button','class-btn',cls);
-        btn.onclick=()=>{selClass2=cls;showStepChildName();};
+        btn.onclick=()=>{selClass=cls;showStepChildName();};
         grid.appendChild(btn);
       });
       cg.appendChild(grid);
@@ -277,7 +275,7 @@ if(MID){
         const grid=el('div','class-grid');
         list.forEach(cls=>{
           const btn=el('button','class-btn'+(cls==='なかよし'?' nakayoshi':''),cls);
-          btn.onclick=()=>{selClass2=cls;showStepChildName();};
+          btn.onclick=()=>{selClass=cls;showStepChildName();};
           grid.appendChild(btn);
         });
         sec.appendChild(grid);
@@ -289,8 +287,8 @@ if(MID){
   // ── 子供の名前入力 ──
   function showStepChildName(){
     const body=$('ci-body');
-    const clsLabel=selClass2
-      ?`<span class="selected-badge">${selClass2}</span>`
+    const clsLabel=selClass
+      ?`<span class="selected-badge">${selClass}</span>`
       :`<span style="font-size:.82rem;color:var(--muted)">（クラスなし）</span>`;
     body.innerHTML=stepBar(selRole.hasTanto?4:3)+
       `<button class="back-btn" id="backBtn">← クラス選択に戻る</button>`+
@@ -310,8 +308,8 @@ if(MID){
   // ── 保護者名入力＋出欠 ──
   function showStepParentName(childName){
     const body=$('ci-body');
-    const clsLabel=selClass2
-      ?`<span class="selected-badge">${selClass2}</span>`
+    const clsLabel=selClass
+      ?`<span class="selected-badge">${selClass}</span>`
       :`<span style="font-size:.82rem;color:var(--muted)">（クラスなし）</span>`;
     body.innerHTML=stepBar(selRole.hasTanto?4:3)+
       `<button class="back-btn" id="backBtn">← 子供の名前に戻る</button>`+
@@ -357,13 +355,13 @@ if(MID){
     const parent=parentName.trim();
     if(!child||!parent||!meeting)return;
     const roleLabel=selTanto?selRole.name+' / '+selTanto:selRole.name;
-    const clsInfo=selRole.noClass?'':selClass2||'なし';
+    const clsInfo=selRole.noClass?'':selClass||'なし';
     meeting.attendees=meeting.attendees||{};
     meeting.records=meeting.records||[];
     const rec={cls:clsInfo,childName:child,name:parent,role:roleLabel,status:status,time:nowt()};
     if(reason&&reason.trim())rec.reason=reason.trim();
     meeting.records.push(rec);
-    if(status==='出席')meeting.attendees[selClass]=(meeting.attendees[selClass]||0)+1;
+    if(status==='出席'&&selClass)meeting.attendees[selClass]=(meeting.attendees[selClass]||0)+1;
     try{
       await api.put('/meetings/'+MID,{attendees:meeting.attendees,records:meeting.records});
       upCount();

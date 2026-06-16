@@ -170,11 +170,13 @@ if(MID){
     $('ch').textContent='本日の記録：'+total+'件';
   }
 
-  // ── ステップ1：クラス選択 ──
+  let selClass2=null; // 下の子のクラス
+
+  // ── ステップ1：クラス選択（上の子） ──
   function showStepClass(){
-    selClass=null;
+    selClass=null;selClass2=null;
     const body=$('ci-body');
-    body.innerHTML=stepBar(1,3)+`<div class="ci-lbl">① クラスを選んでください</div><div id="cg"></div>`;
+    body.innerHTML=stepBar(1,3)+`<div class="ci-lbl">① お子さんのクラスを選んでください</div><div id="cg"></div>`;
     const cg=$('cg');
     CLASSES.forEach(({year,list})=>{
       const sec=el('div','class-section');
@@ -182,7 +184,7 @@ if(MID){
       const grid=el('div','class-grid');
       list.forEach(cls=>{
         const btn=el('button','class-btn'+(cls==='なかよし'?' nakayoshi':''),cls);
-        btn.onclick=()=>{selClass=cls;showStepName();};
+        btn.onclick=()=>{selClass=cls;showStepClass2();};
         grid.appendChild(btn);
       });
       sec.appendChild(grid);
@@ -190,15 +192,69 @@ if(MID){
     });
   }
 
-  // ── ステップ2：名前入力 ──
-  function showStepName(){
+  // ── ステップ1b：下の子のクラス選択 ──
+  function showStepClass2(){
+    selClass2=null;
     const body=$('ci-body');
+    const label=`<span class="selected-badge">${selClass}</span>`;
+    body.innerHTML=stepBar(1,3)+
+      `<button class="back-btn" id="backBtn">← クラス選択に戻る</button>`+
+      `<div style="text-align:center;margin-bottom:14px">${label}</div>`+
+      `<div class="ci-lbl" style="margin-bottom:10px">兄弟姉妹のいる方は下の子のクラスを選択してください</div>`+
+      `<div id="cg2"></div>`+
+      `<button class="ci-btn" id="skipBtn" style="background:var(--muted);margin-top:10px">スキップ（兄弟姉妹なし）</button>`;
+    $('backBtn').onclick=showStepClass;
+    $('skipBtn').onclick=()=>showStepChildName();
+    const cg2=$('cg2');
+    CLASSES.forEach(({year,list})=>{
+      const sec=el('div','class-section');
+      sec.innerHTML='<div class="class-year">'+year+'</div>';
+      const grid=el('div','class-grid');
+      list.forEach(cls=>{
+        if(cls===selClass)return; // 上の子と同じクラスは除外
+        const btn=el('button','class-btn'+(cls==='なかよし'?' nakayoshi':''),cls);
+        btn.onclick=()=>{selClass2=cls;showStepChildName();};
+        grid.appendChild(btn);
+      });
+      sec.appendChild(grid);
+      cg2.appendChild(sec);
+    });
+  }
+
+  // ── ステップ2：子供の名前入力 ──
+  function showStepChildName(){
+    const body=$('ci-body');
+    const clsLabel=selClass2
+      ?`<span class="selected-badge">${selClass}</span><span style="margin:0 4px;color:var(--muted)">＋</span><span class="selected-badge">${selClass2}</span>`
+      :`<span class="selected-badge">${selClass}</span>`;
     body.innerHTML=stepBar(2,3)+
       `<button class="back-btn" id="backBtn">← クラス選択に戻る</button>`+
-      `<div style="text-align:center;margin-bottom:14px"><span class="selected-badge">${selClass}</span></div>`+
-      `<div class="ci-lbl">② お名前を入力してください</div>`+
+      `<div style="text-align:center;margin-bottom:14px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">${clsLabel}</div>`+
+      `<div class="ci-lbl">② お子さんの名前を入力してください</div>`+
+      `<input class="ci-inp" id="childInp" placeholder="例：山田 太郎" autocomplete="off" style="margin-bottom:10px"/>`+
+      `<button class="ci-btn" id="nextBtn" disabled>次へ（保護者名）</button>`;
+    $('backBtn').onclick=showStepClass2;
+    const inp=$('childInp');
+    const next=$('nextBtn');
+    inp.oninput=()=>{next.disabled=!inp.value.trim();};
+    inp.onkeydown=e=>{if(e.key==='Enter'&&inp.value.trim())showStepParentName(inp.value);};
+    next.onclick=()=>showStepParentName(inp.value);
+    setTimeout(()=>inp.focus(),100);
+  }
+
+  // ── ステップ3：保護者名入力＋出欠 ──
+  function showStepParentName(childName){
+    const body=$('ci-body');
+    const clsLabel=selClass2
+      ?`<span class="selected-badge">${selClass}</span><span style="margin:0 4px;color:var(--muted)">＋</span><span class="selected-badge">${selClass2}</span>`
+      :`<span class="selected-badge">${selClass}</span>`;
+    body.innerHTML=stepBar(3,3)+
+      `<button class="back-btn" id="backBtn">← 子供の名前に戻る</button>`+
+      `<div style="text-align:center;margin-bottom:14px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px">${clsLabel}</div>`+
+      `<div style="text-align:center;margin-bottom:14px"><span class="selected-badge">👦 ${childName.trim()}</span></div>`+
+      `<div class="ci-lbl">③ 保護者名を入力してください</div>`+
       `<input class="ci-inp" id="nameInp" placeholder="例：山田 花子" autocomplete="off"/>`;
-    $('backBtn').onclick=showStepClass;
+    $('backBtn').onclick=()=>showStepChildName();
     const inp=$('nameInp');
     inp.oninput=()=>{
       const hasName=inp.value.trim();
@@ -211,7 +267,7 @@ if(MID){
       `<button id="attBtn" class="ci-btn" disabled style="background:var(--forest)">✅ 出席</button>`+
       `<button id="absBtn" class="ci-btn" disabled style="background:var(--amber)">❌ 欠席</button>`;
     body.appendChild(btnWrap);
-    $('attBtn').onclick=()=>doCI(inp.value,'出席');
+    $('attBtn').onclick=()=>doCI(childName,inp.value,'出席');
     $('absBtn').onclick=()=>{
       if(!inp.value.trim())return;
       const existing=$('absReason');
@@ -224,23 +280,26 @@ if(MID){
         `<input class="ci-inp" id="reasonInp" placeholder="例：体調不良、仕事など" autocomplete="off" style="margin-bottom:8px"/>`+
         `<button id="absSubmit" class="ci-btn" style="background:var(--amber)">❌ 欠席で記録する</button>`;
       btnWrap.insertAdjacentElement('afterend',wrap);
-      $('absSubmit').onclick=()=>doCI(inp.value,'欠席',$('reasonInp').value);
+      $('absSubmit').onclick=()=>doCI(childName,inp.value,'欠席',$('reasonInp').value);
       setTimeout(()=>$('reasonInp').focus(),100);
     };
-    inp.onkeydown=e=>{if(e.key==='Enter'&&inp.value.trim())doCI(inp.value,'出席');};
+    inp.onkeydown=e=>{if(e.key==='Enter'&&inp.value.trim())doCI(childName,inp.value,'出席');};
     setTimeout(()=>inp.focus(),100);
   }
 
-  async function doCI(name,status,reason){
-    const t=name.trim();if(!t||!meeting)return;
+  async function doCI(childName,parentName,status,reason){
+    const child=childName.trim();
+    const parent=parentName.trim();
+    if(!child||!parent||!meeting)return;
     meeting.records=meeting.records||[];
-    const rec={cls:selClass,name:t,status:status,time:nowt()};
+    const clsInfo=selClass2?selClass+'・'+selClass2:selClass;
+    const rec={cls:clsInfo,childName:child,name:parent,status:status,time:nowt()};
     if(reason&&reason.trim())rec.reason=reason.trim();
     meeting.records.push(rec);
     try{
       await api.put('/meetings/'+MID,{records:meeting.records});
       upCount();
-      showOK(t,selClass,status);
+      showOK(child,parent,clsInfo,status);
       setTimeout(()=>showStepClass(),2100);
     }catch(e){
       const s=el('div','splash');s.style.background='#b83232';
@@ -249,11 +308,11 @@ if(MID){
     }
   }
 
-  function showOK(name,cls,status){
+  function showOK(childName,parentName,cls,status){
     const isAbs=status==='欠席';
     const s=el('div','splash');
     s.style.background=isAbs?'var(--amber)':'var(--forest)';
-    s.innerHTML=`<div class="splash-icon">${isAbs?'❌':'✅'}</div><div class="splash-name">${name} さん</div><div class="splash-sub">${cls} ／ ${status}</div>`;
+    s.innerHTML=`<div class="splash-icon">${isAbs?'❌':'✅'}</div><div class="splash-name">${parentName} さん</div><div class="splash-sub">${cls} ／ ${childName} ／ ${status}</div>`;
     document.body.appendChild(s);setTimeout(()=>s.remove(),2000);
   }
 
@@ -459,6 +518,7 @@ else{
       const row=el('div','att-row '+(isAbs?'att-a':'att-p'));
       row.innerHTML=`<div>`+
         `<span style="font-weight:700">${r.name}</span>`+
+        (r.childName?`<span style="font-size:.72rem;color:var(--muted);margin-left:6px">👦 ${r.childName}</span>`:'')+
         `<span style="font-size:.72rem;color:var(--muted);margin-left:6px">${r.cls}</span>`+
         (r.reason?`<span style="font-size:.7rem;color:var(--muted);margin-left:4px">(${r.reason})</span>`:'')+
         `</div>`+
@@ -493,8 +553,8 @@ else{
   function exportCSV(m){
     const records=m.records||[];
     const sorted=[...records].sort((a,b)=>CLS_ORDER.indexOf(a.cls)-CLS_ORDER.indexOf(b.cls));
-    const rows=[['クラス','保護者名','出欠','欠席理由','チェックイン時刻']];
-    sorted.forEach(r=>rows.push([r.cls,r.name,r.status||'出席',r.reason||'',r.time||'']));
+    const rows=[['クラス','お子さんの名前','保護者名','出欠','欠席理由','チェックイン時刻']];
+    sorted.forEach(r=>rows.push([r.cls,r.childName||'',r.name,r.status||'出席',r.reason||'',r.time||'']));
     const csv='\uFEFF'+rows.map((r,ri)=>r.map((c,ci)=>{
       const v=(c||'').toString().replace(/"/g,'""');
       if(ri>0&&ci===0)return `="${v}"`;

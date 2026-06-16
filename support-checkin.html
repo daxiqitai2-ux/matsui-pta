@@ -392,41 +392,12 @@ else{
       <div class="url-box">${url}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
         <button class="btn btn-green btn-sm" id="ucopy">📋 URLをコピー</button>
-        <button class="btn btn-ghost btn-sm" id="uqr">📱 QRコードを表示</button>
-      </div>
-      <div id="qr-area" style="text-align:center;margin-bottom:14px;display:none">
-        <canvas id="qr-canvas"></canvas>
-        <div style="font-size:.72rem;color:var(--muted);margin-top:6px">長押しで保存できます</div>
+        <button class="btn btn-ghost btn-sm" id="uqr">🔗 QR作成サービスを開く</button>
       </div>
       <hr class="hr"/>`;
     box.appendChild(card);
     $('ucopy').onclick=()=>navigator.clipboard.writeText(url).then(()=>alert('コピーしました！'));
-    $('uqr').onclick=()=>{
-      const area=$('qr-area');
-      if(area.style.display==='none'){
-        area.style.display='block';
-        drawQR(url,$('qr-canvas'));
-        $('uqr').textContent='📱 QRコードを隠す';
-      }else{
-        area.style.display='none';
-        $('uqr').textContent='📱 QRコードを表示';
-      }
-    };
-  }
-
-  function drawQR(text, canvas){
-    if(window.QRCode){
-      canvas.parentElement.innerHTML='<div id="qr-box" style="display:inline-block;padding:12px;background:#fff;border-radius:10px;border:1.5px solid var(--border)"></div><div style="font-size:.72rem;color:var(--muted);margin-top:8px">長押しで保存できます</div>';
-      new QRCode($('qr-box'),{text,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
-    }else{
-      const script=document.createElement('script');
-      script.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-      script.onload=()=>{
-        canvas.parentElement.innerHTML='<div id="qr-box" style="display:inline-block;padding:12px;background:#fff;border-radius:10px;border:1.5px solid var(--border)"></div><div style="font-size:.72rem;color:var(--muted);margin-top:8px">長押しで保存できます</div>';
-        new QRCode($('qr-box'),{text,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
-      };
-      document.head.appendChild(script);
-    }
+    $('uqr').onclick=()=>window.open('https://qr.quel.jp/?text='+encodeURIComponent(url),'_blank');
   }
 
   async function rAtt(){

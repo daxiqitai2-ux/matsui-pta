@@ -269,6 +269,14 @@ if(MID){
     if(!child||!parent||!meeting)return;
     meeting.records=meeting.records||[];
     const clsInfo=selClass2||'なし';
+    // 二重登録チェック
+    const dup=meeting.records.find(r=>r.name===parent&&r.childName===child);
+    if(dup){
+      const s=el('div','splash');s.style.background='#b83232';
+      s.innerHTML=`<div class="splash-icon">⚠️</div><div class="splash-name">登録済みです</div><div class="splash-sub">${parent} さんはすでに登録されています</div>`;
+      document.body.appendChild(s);setTimeout(()=>{s.remove();showStepClass();},2200);
+      return;
+    }
     const rec={cls:clsInfo,childName:child,name:parent,status:status,time:nowt()};
     if(reason&&reason.trim())rec.reason=reason.trim();
     meeting.records.push(rec);
@@ -278,9 +286,10 @@ if(MID){
       showOK(child,parent,clsInfo,status);
       setTimeout(()=>showStepClass(),2100);
     }catch(e){
+      meeting.records.pop();
       const s=el('div','splash');s.style.background='#b83232';
-      s.innerHTML='<div class="splash-icon">⚠️</div><div class="splash-name">エラー</div>';
-      document.body.appendChild(s);setTimeout(()=>s.remove(),2000);
+      s.innerHTML='<div class="splash-icon">⚠️</div><div class="splash-name">エラーが発生しました</div>';
+      document.body.appendChild(s);setTimeout(()=>s.remove(),2200);
     }
   }
 

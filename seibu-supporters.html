@@ -392,7 +392,7 @@ else{
     ms.forEach(m=>{
       const total=(m.records||[]).length;
       const it=el('div','m-item'+(sel===m.id?' sel':''));
-      it.innerHTML=`<div><div class="m-name">${m.title}</div><div class="m-sub">${fmt(m.date)||'日時未設定'} ／ ${total}件登録</div></div>`+
+      it.innerHTML=`<div><div class="m-name">${m.title}</div><div class="m-sub">${m.date||'締切日未設定'} ／ ${total}件登録</div></div>`+
         `<div style="display:flex;gap:6px;align-items:center"><span class="badge">${total}件</span>`+
         `<button class="btn btn-ghost btn-sm" data-del="${m.id}">削除</button></div>`;
       it.onclick=e=>{if(e.target.dataset.del)return;sel=m.id;rList();};
@@ -418,8 +418,8 @@ else{
     <div class="card-head">➕ 新しいイベントを作成</div>
     <div class="lbl">イベント名</div>
     <input class="inp" id="ntitle" placeholder="例：夏合宿2026" style="margin-bottom:10px"/>
-    <div class="lbl">日時</div>
-    <input class="inp" type="datetime-local" id="ndate" style="margin-bottom:14px"/>
+    <div class="lbl">受付締切日</div>
+    <input class="inp" type="date" id="ndate" style="margin-bottom:14px"/>
     <hr class="hr"/>
     <div class="lbl">連絡事項（任意）</div>
     <textarea class="inp" id="nmemo" rows="4" placeholder="例）・集合場所は体育館前" style="resize:vertical;line-height:1.7;min-height:90px"></textarea>

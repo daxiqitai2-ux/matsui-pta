@@ -19,9 +19,10 @@ async function handleAPI(request, env, url) {
   if (request.method === 'OPTIONS') return new Response(null, { headers });
 
   const isSupport = url.pathname.startsWith('/api/support/');
-  const KV_KEY = isSupport ? 'support_meetings' : 'meetings';
-  const basePath = isSupport ? '/api/support' : '/api';
-  const meetingsPath = basePath + '/meetings';
+  const isSeibu = url.pathname.startsWith('/api/seibu/');
+  const KV_KEY = isSeibu ? 'seibu_events' : isSupport ? 'support_meetings' : 'meetings';
+  const basePath = isSeibu ? '/api/seibu' : isSupport ? '/api/support' : '/api';
+  const meetingsPath = basePath + (isSeibu ? '/events' : '/meetings');
 
   try {
     // GET /meetings - 全取得

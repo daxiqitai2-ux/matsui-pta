@@ -82,6 +82,37 @@ async function handleAPI(request, env, url) {
       }
     }
 
+    // PUT /meetings/:id/records/:idx - 1件修正
+    if (url.pathname.match(new RegExp(`^${meetingsPath}/[^/]+/records/\\d+$`)) && request.method === 'PUT') {
+      const parts = url.pathname.replace(meetingsPath + '/', '').split('/');
+      const id = parts[0];
+      const idx = parseInt(parts[2]);
+      const update = await request.json();
+      const data = await env.HAIYO_KV.get(KV_KEY, 'json') || {};
+      if (!data[id]) return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers });
+      const records = data[id].records || [];
+      if (idx < 0 || idx >= records.length) return new Response(JSON.stringify({ error: 'index out of range' }), { status: 400, headers });
+      records[idx] = { ...records[idx], ...update };
+      data[id].records = records;
+      await env.HAIYO_KV.put(KV_KEY, JSON.stringify(data));
+      return new Response(JSON.stringify({ ok: true }), { headers });
+    }
+
+    // DELETE /meetings/:id/records/:idx - 1件削除
+    if (url.pathname.match(new RegExp(`^${meetingsPath}/[^/]+/records/\\d+$`)) && request.method === 'DELETE') {
+      const parts = url.pathname.replace(meetingsPath + '/', '').split('/');
+      const id = parts[0];
+      const idx = parseInt(parts[2]);
+      const data = await env.HAIYO_KV.get(KV_KEY, 'json') || {};
+      if (!data[id]) return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers });
+      const records = data[id].records || [];
+      if (idx < 0 || idx >= records.length) return new Response(JSON.stringify({ error: 'index out of range' }), { status: 400, headers });
+      records.splice(idx, 1);
+      data[id].records = records;
+      await env.HAIYO_KV.put(KV_KEY, JSON.stringify(data));
+      return new Response(JSON.stringify({ ok: true }), { headers });
+    }
+
     // PUT /meetings/:id - メタ情報更新（memo, date, title等）
     if (url.pathname.startsWith(meetingsPath + '/') && request.method === 'PUT') {
       const id = url.pathname.replace(meetingsPath + '/', '').split('/')[0];

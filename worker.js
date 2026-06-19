@@ -15,7 +15,7 @@ async function handleNisshi(request, env, url) {
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 
@@ -39,7 +39,20 @@ async function handleNisshi(request, env, url) {
       return new Response(JSON.stringify({ ok: true }), { headers });
     }
 
-    // DELETE /api/nisshi/records/:idx
+    // PUT /api/nisshi/records/:idx
+    if (url.pathname.match(/^\/api\/nisshi\/records\/\d+$/) && request.method === 'PUT') {
+      const idx = parseInt(url.pathname.split('/').pop());
+      const updated = await request.json();
+      const records = await env.HAIYO_KV.get(KV_KEY, 'json') || [];
+      if (idx < 0 || idx >= records.length) {
+        return new Response(JSON.stringify({ error: 'index out of range' }), { status: 400, headers });
+      }
+      records[idx] = { ...records[idx], ...updated };
+      await env.HAIYO_KV.put(KV_KEY, JSON.stringify(records));
+      return new Response(JSON.stringify({ ok: true }), { headers });
+    }
+
+        // DELETE /api/nisshi/records/:idx
     if (url.pathname.match(/^\/api\/nisshi\/records\/\d+$/) && request.method === 'DELETE') {
       const idx = parseInt(url.pathname.split('/').pop());
       const records = await env.HAIYO_KV.get(KV_KEY, 'json') || [];

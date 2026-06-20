@@ -75,7 +75,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--i
 .date-item{display:flex;align-items:center;justify-content:space-between;background:var(--lg);border:1.5px solid var(--main);border-radius:10px;padding:10px 14px;margin-bottom:6px;font-size:.88rem;}
 .date-del{background:none;border:none;color:var(--red);font-size:1rem;cursor:pointer;padding:2px 6px;}
 .date-add{background:var(--cream);border:1.5px dashed var(--border);border-radius:10px;padding:12px;margin-bottom:12px;}
-.time-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;}
+.time-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
 .time-btn{padding:10px 4px;border:2px solid var(--border);border-radius:10px;background:var(--paper);font-family:'Noto Sans JP',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;text-align:center;}
 .time-btn.sel{background:var(--lg);border-color:var(--main);color:var(--main);}
 .splash{position:fixed;inset:0;background:var(--main);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:14px;z-index:999;animation:fi .2s ease;}
@@ -263,9 +263,12 @@ if(MID){
         <input class="ci-inp" type="date" id="dateInp" style="margin-bottom:10px"/>
         <div class="ci-lbl" style="margin-bottom:6px">時間帯</div>
         <div class="time-grid">
-          <button class="time-btn" data-t="AM">AM</button>
-          <button class="time-btn" data-t="PM">PM</button>
-          <button class="time-btn" data-t="一日中">一日中</button>
+          <button class="time-btn" data-t="1本部 8:30〜11:00"><span style="font-size:.75rem">1本部</span><br><span style="font-size:.68rem;font-weight:400">8:30〜11:00</span></button>
+          <button class="time-btn" data-t="2本部 11:00〜13:30"><span style="font-size:.75rem">2本部</span><br><span style="font-size:.68rem;font-weight:400">11:00〜13:30</span></button>
+          <button class="time-btn" data-t="3本部 13:30〜16:00"><span style="font-size:.75rem">3本部</span><br><span style="font-size:.68rem;font-weight:400">13:30〜16:00</span></button>
+          <button class="time-btn" data-t="4本部 16:00〜18:30"><span style="font-size:.75rem">4本部</span><br><span style="font-size:.68rem;font-weight:400">16:00〜18:30</span></button>
+          <button class="time-btn" data-t="5本部 終日 8:30〜18:30"><span style="font-size:.75rem">5本部 終日</span><br><span style="font-size:.68rem;font-weight:400">8:30〜18:30</span></button>
+          <button class="time-btn" data-t="6食堂 10:00〜15:00"><span style="font-size:.75rem">6食堂</span><br><span style="font-size:.68rem;font-weight:400">10:00〜15:00</span></button>
         </div>
         <button class="ci-btn" id="addDateBtn" disabled style="margin-top:10px;background:var(--accent);">＋ この日を追加</button>
       </div>`+

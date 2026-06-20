@@ -123,7 +123,7 @@ async function handleAPI(request, env, url) {
         // 二重登録チェック（サーバーサイド）
         const records = data[id].records || [];
         const dup = isSeibu
-          ? records.find(r => r.name === record.name && r.parent === record.parent)
+          ? records.find(r => r.studentName === record.studentName && r.parent === record.parent)
           : records.find(r => r.name === record.name && r.childName === record.childName);
         if (dup) return new Response(JSON.stringify({ error: 'duplicate' }), { status: 409, headers });
         records.push(record);

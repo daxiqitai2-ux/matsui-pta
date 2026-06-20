@@ -318,7 +318,8 @@ let filterRole='';
 
 async function loadList(){
   const data=await api.get('/records');
-  allRecords=Array.isArray(data)?data:[];
+  const raw=Array.isArray(data)?data:[];
+  allRecords=raw.map((r,i)=>({...r,_origIdx:i}));
   allRecords.sort((a,b)=>b.date.localeCompare(a.date)||(b.time||'').localeCompare(a.time||''));
   // 集計
   $('s-total').textContent=allRecords.length;
@@ -338,7 +339,7 @@ function renderList(){
   const shown=filterRole?allRecords.filter(r=>r.role.startsWith(filterRole)):allRecords;
   if(!shown.length){list.innerHTML='<div class="empty">記録がありません</div>';return;}
   list.innerHTML=shown.map((r,i)=>{
-    const origIdx=allRecords.indexOf(r);
+    const origIdx=r._origIdx;
     return `<div class="rec-card">
       <div class="rec-head">
         <div>
@@ -365,7 +366,7 @@ async function deleteRecord(idx){
 }
 
 function openEditModal(idx){
-  const r=allRecords[idx];
+  const r=allRecords.find(rec=>rec._origIdx===idx);
   if(!r)return;
   const allRoleNames=ROLES.flatMap(r2=>r2.sub.length?r2.sub.map(s=>r2.name+(s?'('+s+')':'')):r2.name);
   const roleLabel=r.sub?r.role+'('+r.sub+')':r.role;

@@ -39,25 +39,27 @@ async function handleNisshi(request, env, url) {
       return new Response(JSON.stringify({ ok: true }), { headers });
     }
 
-    // PUT /api/nisshi/records/:idx
-    if (url.pathname.match(/^\/api\/nisshi\/records\/\d+$/) && request.method === 'PUT') {
-      const idx = parseInt(url.pathname.split('/').pop());
+    // PUT /api/nisshi/records/:id
+    if (url.pathname.match(/^\/api\/nisshi\/records\/[^/]+$/) && request.method === 'PUT') {
+      const recId = decodeURIComponent(url.pathname.split('/').pop());
       const updated = await request.json();
       const records = await env.HAIYO_KV.get(KV_KEY, 'json') || [];
-      if (idx < 0 || idx >= records.length) {
-        return new Response(JSON.stringify({ error: 'index out of range' }), { status: 400, headers });
+      const idx = records.findIndex(r => (r._id || String(records.indexOf(r))) === recId);
+      if (idx === -1) {
+        return new Response(JSON.stringify({ error: 'record not found' }), { status: 404, headers });
       }
       records[idx] = { ...records[idx], ...updated };
       await env.HAIYO_KV.put(KV_KEY, JSON.stringify(records));
       return new Response(JSON.stringify({ ok: true }), { headers });
     }
 
-        // DELETE /api/nisshi/records/:idx
-    if (url.pathname.match(/^\/api\/nisshi\/records\/\d+$/) && request.method === 'DELETE') {
-      const idx = parseInt(url.pathname.split('/').pop());
+    // DELETE /api/nisshi/records/:id
+    if (url.pathname.match(/^\/api\/nisshi\/records\/[^/]+$/) && request.method === 'DELETE') {
+      const recId = decodeURIComponent(url.pathname.split('/').pop());
       const records = await env.HAIYO_KV.get(KV_KEY, 'json') || [];
-      if (idx < 0 || idx >= records.length) {
-        return new Response(JSON.stringify({ error: 'index out of range' }), { status: 400, headers });
+      const idx = records.findIndex((r, i) => (r._id || String(i)) === recId);
+      if (idx === -1) {
+        return new Response(JSON.stringify({ error: 'record not found' }), { status: 404, headers });
       }
       records.splice(idx, 1);
       await env.HAIYO_KV.put(KV_KEY, JSON.stringify(records));

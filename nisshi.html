@@ -319,7 +319,7 @@ let filterRole='';
 async function loadList(){
   const data=await api.get('/records');
   const raw=Array.isArray(data)?data:[];
-  allRecords=raw.map((r,i)=>({...r,_origIdx:i}));
+  allRecords=raw.map((r,i)=>({_origIdx:i,...r}));
   allRecords.sort((a,b)=>b.date.localeCompare(a.date)||(b.time||'').localeCompare(a.time||''));
   // 集計
   $('s-total').textContent=allRecords.length;
@@ -339,7 +339,7 @@ function renderList(){
   const shown=filterRole?allRecords.filter(r=>r.role.startsWith(filterRole)):allRecords;
   if(!shown.length){list.innerHTML='<div class="empty">記録がありません</div>';return;}
   list.innerHTML=shown.map((r,i)=>{
-    const origIdx=r._origIdx;
+    const recId=r._id||String(r._origIdx);
     return `<div class="rec-card">
       <div class="rec-head">
         <div>
@@ -349,7 +349,7 @@ function renderList(){
         <div style="text-align:right">
           <div class="rec-date">${r.date}</div>
           <div class="rec-date">${r.time||''}</div>
-          <button class="btn btn-ghost btn-sm" style="margin-top:4px;color:#888;font-size:.68rem;margin-right:4px" onclick="openEditModal(${origIdx})">✏️</button><button class="btn btn-ghost btn-sm" style="margin-top:4px;color:#e55;font-size:.68rem" onclick="deleteRecord(${origIdx})">🗑️</button>
+          <button class="btn btn-ghost btn-sm" style="margin-top:4px;color:#888;font-size:.68rem;margin-right:4px" onclick="openEditModal('${recId}')">✏️</button><button class="btn btn-ghost btn-sm" style="margin-top:4px;color:#e55;font-size:.68rem" onclick="deleteRecord('${recId}')">🗑️</button>
         </div>
       </div>
       <div class="rec-body">📌 ${r.work}</div>
@@ -358,15 +358,15 @@ function renderList(){
   }).join('');
 }
 
-async function deleteRecord(idx){
+async function deleteRecord(recId){
   if(!confirm('この記録を削除しますか？'))return;
-  const res=await api.del('/records/'+idx);
+  const res=await api.del('/records/'+encodeURIComponent(recId));
   if(res.ok)loadList();
   else alert('削除に失敗しました');
 }
 
-function openEditModal(idx){
-  const r=allRecords.find(rec=>rec._origIdx===idx);
+function openEditModal(recId){
+  const r=allRecords.find(rec=>(rec._id||String(rec._origIdx))===recId);
   if(!r)return;
   const allRoleNames=ROLES.flatMap(r2=>r2.sub.length?r2.sub.map(s=>r2.name+(s?'('+s+')':'')):r2.name);
   const roleLabel=r.sub?r.role+'('+r.sub+')':r.role;
@@ -396,15 +396,15 @@ function openEditModal(idx){
       <textarea class="textarea mb16" id="e-note">${r.note||''}</textarea>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('editModal').remove()">キャンセル</button>
-        <button class="btn" style="flex:1;background:#e55;color:#fff;border:none" onclick="deleteFromModal(${idx})">🗑️ 削除</button>
-        <button class="btn btn-green" style="flex:1" onclick="saveEdit(${idx})">保存</button>
+        <button class="btn" style="flex:1;background:#e55;color:#fff;border:none" onclick="deleteFromModal('${recId}')">🗑️ 削除</button>
+        <button class="btn btn-green" style="flex:1" onclick="saveEdit('${recId}')">保存</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
   modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
 }
 
-async function saveEdit(idx){
+async function saveEdit(recId){
   const roleVal=document.getElementById('e-role').value;
   const [roleName,sub]=roleVal.split('__');
   const updated={
@@ -418,14 +418,14 @@ async function saveEdit(idx){
     work:document.getElementById('e-work').value.trim(),
     note:document.getElementById('e-note').value.trim(),
   };
-  const res=await api.put('/records/'+idx,updated);
+  const res=await api.put('/records/'+encodeURIComponent(recId),updated);
   if(res.ok){document.getElementById('editModal').remove();loadList();}
   else alert('保存に失敗しました');
 }
 
-async function deleteFromModal(idx){
+async function deleteFromModal(recId){
   if(!confirm('この記録を削除しますか？'))return;
-  const res=await api.del('/records/'+idx);
+  const res=await api.del('/records/'+encodeURIComponent(recId));
   if(res.ok){document.getElementById('editModal').remove();loadList();}
   else alert('削除に失敗しました');
 }

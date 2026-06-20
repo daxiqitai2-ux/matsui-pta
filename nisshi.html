@@ -287,6 +287,7 @@ function renderConfirm(){
 
 async function submitRecord(){
   const record={
+    _id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
     role:state.sub?`${state.role} / ${state.sub}`:state.role,
     childName:state.childName,
     cls:state.cls,

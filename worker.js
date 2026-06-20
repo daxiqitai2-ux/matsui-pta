@@ -44,7 +44,7 @@ async function handleNisshi(request, env, url) {
       const recId = decodeURIComponent(url.pathname.split('/').pop());
       const updated = await request.json();
       const records = await env.HAIYO_KV.get(KV_KEY, 'json') || [];
-      const idx = records.findIndex(r => (r._id || String(records.indexOf(r))) === recId);
+      const idx = records.findIndex((r, i) => (r._id || String(i)) === recId);
       if (idx === -1) {
         return new Response(JSON.stringify({ error: 'record not found' }), { status: 404, headers });
       }
@@ -53,7 +53,7 @@ async function handleNisshi(request, env, url) {
       return new Response(JSON.stringify({ ok: true }), { headers });
     }
 
-    // DELETE /api/nisshi/records/:id
+        // DELETE /api/nisshi/records/:id
     if (url.pathname.match(/^\/api\/nisshi\/records\/[^/]+$/) && request.method === 'DELETE') {
       const recId = decodeURIComponent(url.pathname.split('/').pop());
       const records = await env.HAIYO_KV.get(KV_KEY, 'json') || [];

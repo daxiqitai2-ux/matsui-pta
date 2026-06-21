@@ -331,11 +331,11 @@ function renderModalList() {
   });
   const manualPeople = manualData[mkey] || [];
   let h = '';
-  apiPeople.forEach(p => {
+  apiPeople.forEach((p, i) => {
     const c = colorOf(p.parent);
     h += '<div class="modal-person" style="background:' + c.bg + ';color:' + c.text + '">';
     h += '<span>' + p.name + '（' + (p.parent||'?') + '）</span>';
-    h += '<span style="font-size:.7rem;color:var(--muted)">登録済</span></div>';
+    h += '<button class="del-btn" onclick="deleteApi(' + i + ')">✕</button></div>';
   });
   manualPeople.forEach((p, i) => {
     const c = colorOf(p.parent);
@@ -357,6 +357,26 @@ function addManual() {
   document.getElementById('modalInput').value = '';
   renderModalList();
   renderCalendar(currentRecords);
+}
+
+function deleteApi(idx) {
+  // currentRecordsからそのモーダルの日付・スロットのエントリを削除
+  let count = 0;
+  for (const r of currentRecords) {
+    const name = r.studentName || r.name || '不明';
+    const parent = r.parent || '';
+    const newDates = (r.dates||[]).filter(d => {
+      if (d.date === modalDate && d.time === modalSlotKey) {
+        if (count === idx) { count++; return false; }
+        count++;
+      }
+      return true;
+    });
+    r.dates = newDates;
+  }
+  renderModalList();
+  renderCalendar(currentRecords);
+  renderStats(currentRecords);
 }
 
 function deleteManual(idx) {

@@ -127,8 +127,13 @@ async function handleAPI(request, env, url) {
         const dup = isSeibu
           ? records.find(r => r.studentName === record.studentName && r.parent === record.parent)
           : records.find(r => r.name === record.name && r.childName === record.childName);
-        if (dup) return new Response(JSON.stringify({ error: 'duplicate' }), { status: 409, headers });
-        records.push(record);
+        if (dup) {
+          // 既存レコードを上書き（日程の修正に対応）
+          const idx = records.indexOf(dup);
+          records[idx] = record;
+        } else {
+          records.push(record);
+        }
         data[id].records = records;
         // attendeesも更新
         if (record.status === '出席' && record.cls && record.cls !== 'なし') {

@@ -414,7 +414,14 @@ function showStatus(msg, type) {
 function clearStatus() { document.getElementById('statusMsg').innerHTML = ''; }
 
 // ===== 起動 =====
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', () => {
+  init();
+  // 30秒ごとに自動再取得
+  setInterval(async () => {
+    const sel = document.getElementById('eventSelect');
+    if (sel && sel.value) await loadEvent(sel.value);
+  }, 30000);
+});
 </script>
 </body>
 </html>

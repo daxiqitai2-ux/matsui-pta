@@ -77,7 +77,21 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 
 <div class="topbar">
   <h1>📝 PTA 業務日誌</h1>
-  <span class="pill" id="modePill">記録する</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button onclick="showQR()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;padding:5px 10px;font-size:.78rem;cursor:pointer;font-family:inherit;">📷 QR</button>
+    <span class="pill" id="modePill">記録する</span>
+  </div>
+</div>
+
+<!-- QRモーダル -->
+<div id="qrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;text-align:center;max-width:320px;width:100%;">
+    <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">📷 入力用QRコード</div>
+    <div style="font-size:.78rem;color:#6b7280;margin-bottom:16px;">このQRを読むと入力フォームが開きます</div>
+    <div id="qrcode" style="margin:0 auto 16px;"></div>
+    <div style="font-size:.7rem;color:#9ca3af;word-break:break-all;margin-bottom:16px;" id="qrUrl"></div>
+    <button onclick="document.getElementById('qrModal').style.display='none'" style="background:#f3f4f6;border:none;border-radius:10px;padding:10px 24px;font-size:.9rem;cursor:pointer;font-family:inherit;">閉じる</button>
+  </div>
 </div>
 
 <div class="tab-bar">
@@ -443,6 +457,19 @@ function exportCSV(){
 
 // 初期表示
 renderStep();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+function showQR(){
+  const modal=document.getElementById('qrModal');
+  const url=location.origin+'/nisshi/input';
+  document.getElementById('qrUrl').textContent=url;
+  const box=document.getElementById('qrcode');
+  box.innerHTML='';
+  new QRCode(box,{text:url,width:200,height:200,colorDark:'#1b4332',colorLight:'#ffffff'});
+  modal.style.display='flex';
+  modal.onclick=function(e){if(e.target===modal)modal.style.display='none';};
+}
 </script>
 </body>
 </html>

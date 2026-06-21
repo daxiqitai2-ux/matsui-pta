@@ -301,6 +301,105 @@ body {
 .status-msg.info { background: var(--pale); color: var(--navy); }
 .status-msg.warn { background: #fff8e0; color: #8a6c00; }
 .status-msg.error { background: #fde8e8; color: #c0392b; }
+
+/* 編集モーダル */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.modal-title {
+  font-size: .95rem;
+  font-weight: 900;
+  color: var(--navy);
+  margin-bottom: 14px;
+}
+.modal-list {
+  margin-bottom: 14px;
+}
+.modal-person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: .82rem;
+  font-weight: 700;
+}
+.modal-person .del-btn {
+  background: none;
+  border: none;
+  color: #e53e3e;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.modal-add {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.modal-add input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: .82rem;
+}
+.modal-add select {
+  padding: 8px 6px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: .82rem;
+  background: var(--pale);
+}
+.modal-add button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--navy);
+  color: white;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.modal-close {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--pale);
+  color: var(--navy);
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.edit-btn {
+  display: inline-block;
+  font-size: .65rem;
+  color: var(--muted);
+  cursor: pointer;
+  margin-top: 2px;
+  user-select: none;
+}
+.edit-btn:hover { color: var(--navy); }
 </style>
 </head>
 <body>
@@ -365,18 +464,11 @@ const SLOTS = [
   { key:'8弁当配達 10:30〜',   label:'⑧弁当配達\n10:30〜' },
 ];
 
-// カラーパレット
-const COLORS = [
-  { bg:'#fde8f0', text:'#8b0032', dot:'#d91b6a' },
-  { bg:'#e8f0fd', text:'#002f8b', dot:'#1b4dd9' },
-  { bg:'#e8fdf0', text:'#007830', dot:'#1bd95c' },
-  { bg:'#fdf0e8', text:'#7a2d00', dot:'#d96b1b' },
-  { bg:'#f5e8fd', text:'#4a007a', dot:'#9b1bd9' },
-  { bg:'#e8fdfc', text:'#006b6b', dot:'#1bd9d9' },
-  { bg:'#fdfde8', text:'#6b6b00', dot:'#c4c41b' },
-  { bg:'#fde8e8', text:'#7a0000', dot:'#d91b1b' },
-  { bg:'#e8fdfd', text:'#003c7a', dot:'#1b7ad9' },
-  { bg:'#f0fde8', text:'#1e6b00', dot:'#3fd91b' },
+// ==================== カラー（父:青 母:ピンク） ====================
+const COLOR_FATHER = { bg:'#dbeafe', text:'#1e3a8a', dot:'#3b82f6' };
+const COLOR_MOTHER = { bg:'#fde8f0', text:'#9d174d', dot:'#ec4899' };
+const COLOR_OTHER  = { bg:'#f3f4f6', text:'#374151', dot:'#6b7280' };
+
 ];
 
 // ==================== 状態 ====================
@@ -475,38 +567,33 @@ async function reloadData() {
   }
 }
 
-// ==================== カラーマップ ====================
-function buildPersonColors(records) {
-  colorIdx = 0;
-  personColorMap = {};
-  records.forEach(r => {
-    const name = r.studentName || r.name || '不明';
-    if (!personColorMap[name]) {
-      personColorMap[name] = COLORS[colorIdx % COLORS.length];
-      colorIdx++;
-    }
-  });
+// ==================== カラー取得 ====================
+function getColorByParent(parent) {
+  if (!parent) return COLOR_OTHER;
+  if (parent === '父') return COLOR_FATHER;
+  if (parent === '母') return COLOR_MOTHER;
+  return COLOR_OTHER;
 }
 
-function getColor(name) {
-  if (!personColorMap[name]) {
-    personColorMap[name] = COLORS[colorIdx % COLORS.length];
-    colorIdx++;
-  }
-  return personColorMap[name];
+function buildPersonColors(records) {
+  // 父母カラーのみ使用するため何もしない
 }
 
 // ==================== カレンダー描画 ====================
 function getRegisteredPeopleForSlot(records, date, slotKey) {
-  const people = [];
+  const people = []; // [{name, parent}]
   records.forEach(r => {
     const name = r.studentName || r.name || '不明';
+    const parent = r.parent || '';
     (r.dates || []).forEach(d => {
       if (d.date === date && d.time === slotKey) {
-        people.push(name);
+        people.push({name, parent});
       }
     });
   });
+  // 手動入力も追加
+  const key = date + '___' + slotKey;
+  (manualData[key] || []).forEach(m => people.push(m));
   return people;
 }
 
@@ -542,10 +629,12 @@ function renderWeek(weeks, title, records) {
       const people = getRegisteredPeopleForSlot(records, d.date, slot.key);
       const cls = d.dow === 'sun' ? 'weekend-sun' : d.dow === 'sat' ? 'weekend-sat' : '';
       html += `<div class="slot-cell ${cls}">`;
-      people.forEach(name => {
-        const c = getColor(name);
-        html += `<span class="person-badge" style="background:${c.bg};color:${c.text}">${shortName(name)}</span>`;
+      people.forEach(p => {
+        const c = getColorByParent(p.parent);
+        html += `<span class="person-badge" style="background:${c.bg};color:${c.text}">${shortName(p.name)}(${p.parent||'?'})</span>`;
       });
+      // 編集ボタン
+      html += `<span class="edit-btn" onclick="openModal('${d.date}','${slot.key}')">＋</span>`;
       html += '</div>';
     });
     html += '</div>';
@@ -566,13 +655,11 @@ function renderCalendar(records) {
   let html = '';
   
   // 凡例
-  if (Object.keys(personColorMap).length > 0) {
-    html += '<div class="legend">';
-    Object.entries(personColorMap).forEach(([name, c]) => {
-      html += `<div class="legend-item"><div class="legend-dot" style="background:${c.dot}"></div>${name}</div>`;
-    });
-    html += '</div>';
-  }
+  html += `<div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:${COLOR_FATHER.dot}"></div>父</div>
+    <div class="legend-item"><div class="legend-dot" style="background:${COLOR_MOTHER.dot}"></div>母</div>
+    <div class="legend-item"><div class="legend-dot" style="background:${COLOR_OTHER.dot}"></div>手動入力</div>
+  </div>`;
   
   html += renderWeek(WEEK2, '8/9週（8/9〜8/15）', records);
   html += renderWeek(WEEK3, '8/16週（8/16〜8/22）', records);
@@ -595,21 +682,23 @@ function renderStats(records) {
   const counts = {};
   records.forEach(r => {
     const name = r.studentName || r.name || '不明';
-    counts[name] = (counts[name] || 0) + (r.dates ? r.dates.length : 0);
+    const parent = r.parent || '';
+    if (!counts[name]) counts[name] = {cnt:0, parent};
+    counts[name].cnt += (r.dates ? r.dates.length : 0);
   });
   
   let html = `<div class="stats-section">
     <div class="stats-title">👥 担当者一覧</div>
     <div class="stats-grid">`;
   
-  Object.entries(counts).sort((a,b) => b[1]-a[1]).forEach(([name, cnt]) => {
-    const c = getColor(name);
+  Object.entries(counts).sort((a,b) => b[1].cnt - a[1].cnt).forEach(([name, info]) => {
+    const c = getColorByParent(info.parent);
     const initial = name.charAt(0);
     html += `<div class="stat-card" style="background:${c.bg}">
       <div class="stat-avatar" style="background:${c.dot};color:white">${initial}</div>
       <div>
-        <div class="stat-name" style="color:${c.text}">${name}</div>
-        <div class="stat-count">${cnt} コマ担当</div>
+        <div class="stat-name" style="color:${c.text}">${name}（${info.parent||'?'}）</div>
+        <div class="stat-count">${info.cnt} コマ担当</div>
       </div>
     </div>`;
   });
@@ -637,8 +726,93 @@ function clearStatus() {
   document.getElementById('statusMsg').innerHTML = '';
 }
 
+
+// ==================== モーダル ====================
+let modalDate = '';
+let modalSlotKey = '';
+
+function openModal(date, slotKey) {
+  modalDate = date;
+  modalSlotKey = slotKey;
+  const slotInfo = SLOTS.find(s => s.key === slotKey);
+  const label = slotInfo ? slotInfo.label.replace('\n', ' ') : slotKey;
+  document.getElementById('modalTitle').textContent = `✏️ ${date} ${label}`;
+  renderModalList();
+  document.getElementById('editModal').classList.add('show');
+  document.getElementById('modalInput').focus();
+}
+
+function renderModalList() {
+  const key = modalDate + '___' + modalSlotKey;
+  // API登録者
+  const apiPeople = getRegisteredPeopleForSlot(currentRecords, modalDate, modalSlotKey)
+    .filter(p => !(manualData[key] || []).find(m => m.name === p.name));
+  // 手動登録者
+  const manualPeople = manualData[key] || [];
+  
+  let html = '';
+  apiPeople.forEach(p => {
+    const c = getColorByParent(p.parent);
+    html += `<div class="modal-person" style="background:${c.bg};color:${c.text}">
+      <span>${p.name}（${p.parent||'?'}）</span>
+      <span style="font-size:.7rem;color:var(--muted)">登録済</span>
+    </div>`;
+  });
+  manualPeople.forEach((p, i) => {
+    const c = getColorByParent(p.parent);
+    html += `<div class="modal-person" style="background:${c.bg};color:${c.text}">
+      <span>${p.name}（${p.parent}）</span>
+      <button class="del-btn" onclick="deleteManual('${key}',${i})">✕</button>
+    </div>`;
+  });
+  if (!html) html = '<div style="color:var(--muted);font-size:.8rem;padding:4px">まだ登録なし</div>';
+  document.getElementById('modalList').innerHTML = html;
+}
+
+function addManual() {
+  const name = document.getElementById('modalInput').value.trim();
+  const parent = document.getElementById('modalParent').value;
+  if (!name) return;
+  const key = modalDate + '___' + modalSlotKey;
+  if (!manualData[key]) manualData[key] = [];
+  manualData[key].push({name, parent});
+  document.getElementById('modalInput').value = '';
+  renderModalList();
+  renderCalendar(currentRecords);
+}
+
+function deleteManual(key, idx) {
+  manualData[key].splice(idx, 1);
+  renderModalList();
+  renderCalendar(currentRecords);
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('editModal')) closeModalBtn();
+}
+function closeModalBtn() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
 // ==================== 起動 ====================
 window.addEventListener('DOMContentLoaded', init);
 </script>
+
+<!-- 編集モーダル -->
+<div class="modal-overlay" id="editModal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-list" id="modalList"></div>
+    <div class="modal-add">
+      <input type="text" id="modalInput" placeholder="名前を入力" />
+      <select id="modalParent">
+        <option value="父">父</option>
+        <option value="母">母</option>
+      </select>
+      <button onclick="addManual()">追加</button>
+    </div>
+    <button class="modal-close" onclick="closeModalBtn()">✕ 閉じる</button>
+  </div>
+</div>
 </body>
 </html>

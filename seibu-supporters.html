@@ -219,9 +219,11 @@ if(MID){
     body.innerHTML=`<button class="back-btn" id="bb">← 名前入力に戻る</button>`+
       `<div class="ci-lbl">④ 父・母を選んでください（修正）</div>`+
       `<div class="sel-grid">
-        <button class="sel-btn" onclick="selParent='父';loadEditRecord()">父</button>
-        <button class="sel-btn" onclick="selParent='母';loadEditRecord()">母</button>
+        <button class="sel-btn" id="btnFather">父</button>
+        <button class="sel-btn" id="btnMother">母</button>
       </div>`;
+    $('btnFather').onclick=()=>{selParent='父';loadEditRecord();};
+    $('btnMother').onclick=()=>{selParent='母';loadEditRecord();};
     $('bb').onclick=()=>showEditStep3();
   }
 

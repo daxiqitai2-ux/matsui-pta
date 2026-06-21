@@ -275,8 +275,8 @@ function renderCalendar(records) {
 
 // ===== 統計 =====
 function renderStats(records) {
-  if (!records.length) { document.getElementById('statsArea').innerHTML = ''; return; }
   const counts = {};
+  // APIデータ集計
   records.forEach(r => {
     const name = r.studentName || r.name || '不明';
     const parent = r.parent || '';
@@ -284,6 +284,15 @@ function renderStats(records) {
     if (!counts[key]) counts[key] = {name, parent, cnt:0};
     counts[key].cnt += (r.dates||[]).length;
   });
+  // 手動入力データも集計
+  Object.values(manualData).forEach(people => {
+    people.forEach(p => {
+      const key = p.name + '___' + p.parent;
+      if (!counts[key]) counts[key] = {name:p.name, parent:p.parent, cnt:0};
+      counts[key].cnt += 1;
+    });
+  });
+  if (!Object.keys(counts).length) { document.getElementById('statsArea').innerHTML = ''; return; }
   let h = '<div class="stats-section"><div class="stats-title">👥 担当者一覧</div><div class="stats-grid">';
   Object.values(counts).sort((a,b)=>b.cnt-a.cnt).forEach(info => {
     const c = colorOf(info.parent);
@@ -357,6 +366,7 @@ function addManual() {
   document.getElementById('modalInput').value = '';
   renderModalList();
   renderCalendar(currentRecords);
+  renderStats(currentRecords);
 }
 
 function deleteApi(idx) {
@@ -384,6 +394,7 @@ function deleteManual(idx) {
   manualData[mkey].splice(idx, 1);
   renderModalList();
   renderCalendar(currentRecords);
+  renderStats(currentRecords);
 }
 
 function closeModal() {

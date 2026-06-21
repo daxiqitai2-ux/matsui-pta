@@ -279,15 +279,16 @@ function renderStats(records) {
   records.forEach(r => {
     const name = r.studentName || r.name || '不明';
     const parent = r.parent || '';
-    if (!counts[name]) counts[name] = {cnt:0, parent};
-    counts[name].cnt += (r.dates||[]).length;
+    const key = name + '___' + parent;
+    if (!counts[key]) counts[key] = {name, parent, cnt:0};
+    counts[key].cnt += (r.dates||[]).length;
   });
   let h = '<div class="stats-section"><div class="stats-title">👥 担当者一覧</div><div class="stats-grid">';
-  Object.entries(counts).sort((a,b)=>b[1].cnt-a[1].cnt).forEach(([name,info]) => {
+  Object.values(counts).sort((a,b)=>b.cnt-a.cnt).forEach(info => {
     const c = colorOf(info.parent);
     h += '<div class="stat-card" style="background:' + c.bg + '">';
-    h += '<div class="stat-avatar" style="background:' + c.dot + '">' + name.charAt(0) + '</div>';
-    h += '<div><div class="stat-name" style="color:' + c.text + '">' + name + '（' + (info.parent||'?') + '）</div>';
+    h += '<div class="stat-avatar" style="background:' + c.dot + '">' + info.name.charAt(0) + '</div>';
+    h += '<div><div class="stat-name" style="color:' + c.text + '">' + info.name + '（' + (info.parent||'?') + '）</div>';
     h += '<div class="stat-count">' + info.cnt + ' コマ担当</div></div></div>';
   });
   h += '</div></div>';

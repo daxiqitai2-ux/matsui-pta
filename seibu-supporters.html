@@ -135,7 +135,7 @@ if(MID){
         $('ci-memo').innerHTML=`<div style="background:var(--lg);border:1.5px solid #a0b4d8;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:.84rem;line-height:1.8;white-space:pre-wrap;">${event.memo.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
       }
       upCount();
-      showStep1();
+      showStep0();
     }catch(e){$('ct').textContent='読み込みエラー';}
   }
 
@@ -157,6 +157,173 @@ if(MID){
     });
     html+='</div>';
     return html;
+  }
+
+  // ── Step0：新規 or 修正選択 ──
+  function showStep0(){
+    selGrade=null;selNum='';selName='';selParent=null;selDates=[];
+    const body=$('ci-body');
+    body.innerHTML=`
+      <div class="ci-lbl" style="text-align:center;margin-bottom:20px;font-size:1rem">どちらですか？</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <button class="sel-btn" style="font-size:1rem;padding:18px;" onclick="showStep1()">🆕 新規登録</button>
+        <button class="sel-btn" style="font-size:1rem;padding:18px;background:var(--lg);color:var(--main);" onclick="showEditStep1()">✏️ 登録内容の修正</button>
+      </div>`;
+  }
+
+  // ── 修正フロー Step1：学年選択 ──
+  function showEditStep1(){
+    selGrade=null;selNum='';selName='';selParent=null;selDates=[];
+    const body=$('ci-body');
+    body.innerHTML=`<div class="ci-lbl">① 学年を選んでください（修正）</div>`+
+      `<div class="sel-grid" id="gg"></div>`;
+    const gg=$('gg');
+    GRADES.forEach(g=>{
+      const btn=el('button','sel-btn',g);
+      btn.onclick=()=>{selGrade=g;showEditStep2();};
+      gg.appendChild(btn);
+    });
+  }
+
+  // ── 修正フロー Step2：背番号入力 ──
+  function showEditStep2(){
+    const body=$('ci-body');
+    body.innerHTML=`<button class="back-btn" id="bb">← 学年選択に戻る</button>`+
+      `<div class="ci-lbl">② 背番号を入力してください（修正）</div>`+
+      `<input class="ci-inp" type="number" id="numInp" placeholder="例：7" min="0" max="99"/>`+
+      `<button class="ci-btn" id="nb">次へ →</button>`;
+    $('bb').onclick=()=>showEditStep1();
+    const go=()=>{selNum=$('numInp').value.trim();if(!selNum)return;showEditStep3();};
+    $('nb').onclick=go;
+    $('numInp').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+    setTimeout(()=>$('numInp').focus(),100);
+  }
+
+  // ── 修正フロー Step3：名前入力 ──
+  function showEditStep3(){
+    const body=$('ci-body');
+    body.innerHTML=`<button class="back-btn" id="bb">← 背番号入力に戻る</button>`+
+      `<div class="ci-lbl">③ お子さまの名前を入力してください（修正）</div>`+
+      `<input class="ci-inp" type="text" id="nameInp" placeholder="例：山田 太郎"/>`+
+      `<button class="ci-btn" id="nb">次へ →</button>`;
+    $('bb').onclick=()=>showEditStep2();
+    const go=()=>{selName=$('nameInp').value.trim();if(!selName)return;showEditStep4();};
+    $('nb').onclick=go;
+    $('nameInp').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+    setTimeout(()=>$('nameInp').focus(),100);
+  }
+
+  // ── 修正フロー Step4：父母選択 ──
+  function showEditStep4(){
+    const body=$('ci-body');
+    body.innerHTML=`<button class="back-btn" id="bb">← 名前入力に戻る</button>`+
+      `<div class="ci-lbl">④ 父・母を選んでください（修正）</div>`+
+      `<div class="sel-grid">
+        <button class="sel-btn" onclick="selParent='父';loadEditRecord()">父</button>
+        <button class="sel-btn" onclick="selParent='母';loadEditRecord()">母</button>
+      </div>`;
+    $('bb').onclick=()=>showEditStep3();
+  }
+
+  // ── 修正フロー：既存データ読み込み・日程編集 ──
+  async function loadEditRecord(){
+    const records = event.records || [];
+    const rec = records.find(r => r.studentName===selName && r.parent===selParent);
+    const recIdx = records.indexOf(rec);
+    if(!rec){
+      const s=el('div','splash');s.style.background='var(--red)';
+      s.innerHTML=`<div class="splash-icon">⚠️</div><div class="splash-name">見つかりません</div><div class="splash-sub">${selName}（${selParent}）の登録が見つかりませんでした</div>`;
+      document.body.appendChild(s);setTimeout(()=>{s.remove();showStep0();},2500);
+      return;
+    }
+    selDates=[...rec.dates];
+    showEditDates(recIdx);
+  }
+
+  function showEditDates(recIdx){
+    const body=$('ci-body');
+    const badges=`
+      <span class="selected-badge">${selGrade}</span>
+      <span class="selected-badge">#${selNum}</span>
+      <span class="selected-badge">${selName}</span>
+      <span class="selected-badge">${selParent}</span>`;
+
+    function renderDateList(){
+      let html='';
+      selDates.forEach((d,i)=>{
+        html+=`<div class="date-item">
+          <span>📅 ${d.date}　${d.time}</span>
+          <button class="date-del" data-i="${i}">✕</button>
+        </div>`;
+      });
+      $('dl').innerHTML=html||'<div style="color:var(--muted);font-size:.82rem;padding:4px">日程なし</div>';
+      $('dl').querySelectorAll('.date-del').forEach(btn=>{
+        btn.onclick=()=>{selDates.splice(parseInt(btn.dataset.i),1);renderDateList();};
+      });
+    }
+
+    let selTime2=null;
+    body.innerHTML=`<button class="back-btn" id="bb">← 最初に戻る</button>`+
+      `<div style="text-align:center;margin-bottom:14px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">${badges}</div>`+
+      `<div class="ci-lbl">✏️ 日程を編集してください</div>`+
+      `<div class="date-list" id="dl"></div>`+
+      `<div class="date-add">
+        <div class="ci-lbl" style="margin-bottom:6px">日付</div>
+        <input class="ci-inp" type="date" id="dateInp" style="margin-bottom:10px"/>
+        <div class="ci-lbl" style="margin-bottom:6px">時間帯</div>
+        <div class="time-grid">
+          <button class="time-btn" data-t="1事前準備"><span style="font-size:.75rem">1事前準備</span><br><span style="font-size:.68rem;font-weight:400">&nbsp;</span></button>
+          <button class="time-btn" data-t="2本部 8:30〜11:00"><span style="font-size:.75rem">2本部</span><br><span style="font-size:.68rem;font-weight:400">8:30〜11:00</span></button>
+          <button class="time-btn" data-t="3本部 11:00〜13:30"><span style="font-size:.75rem">3本部</span><br><span style="font-size:.68rem;font-weight:400">11:00〜13:30</span></button>
+          <button class="time-btn" data-t="4本部 13:30〜16:00"><span style="font-size:.75rem">4本部</span><br><span style="font-size:.68rem;font-weight:400">13:30〜16:00</span></button>
+          <button class="time-btn" data-t="5本部 16:00〜18:30"><span style="font-size:.75rem">5本部</span><br><span style="font-size:.68rem;font-weight:400">16:00〜18:30</span></button>
+          <button class="time-btn" data-t="6本部 終日 8:30〜18:30"><span style="font-size:.75rem">6本部(終日)</span><br><span style="font-size:.68rem;font-weight:400">8:30〜18:30</span></button>
+          <button class="time-btn" data-t="7食堂 10:00〜15:00"><span style="font-size:.75rem">7食堂</span><br><span style="font-size:.68rem;font-weight:400">10:00〜15:00</span></button>
+          <button class="time-btn" data-t="8弁当配達 10:30〜"><span style="font-size:.75rem">8弁当配達</span><br><span style="font-size:.68rem;font-weight:400">10:30〜</span></button>
+        </div>
+        <button class="ci-btn" id="addDateBtn" disabled>＋ 追加</button>
+      </div>`+
+      `<button class="ci-btn" id="saveBtn" style="margin-top:16px;background:var(--main)">💾 この内容で保存する</button>`;
+
+    $('bb').onclick=()=>showStep0();
+    renderDateList();
+
+    $('dl').querySelectorAll('.date-del').forEach(btn=>{
+      btn.onclick=()=>{selDates.splice(parseInt(btn.dataset.i),1);renderDateList();};
+    });
+
+    body.querySelectorAll('.time-btn').forEach(b=>{
+      b.onclick=()=>{
+        body.querySelectorAll('.time-btn').forEach(x=>x.classList.remove('sel'));
+        b.classList.add('sel');
+        selTime2=b.dataset.t;
+        $('addDateBtn').disabled=!($('dateInp').value&&selTime2);
+      };
+    });
+    $('dateInp').oninput=()=>{$('addDateBtn').disabled=!($('dateInp').value&&selTime2);};
+    $('addDateBtn').onclick=()=>{
+      const d=$('dateInp').value;
+      if(!d||!selTime2)return;
+      const dt=new Date(d);
+      const label=`${dt.getMonth()+1}/${dt.getDate()}`;
+      selDates.push({date:label,rawDate:d,time:selTime2});
+      renderDateList();
+    };
+
+    $('saveBtn').onclick=async()=>{
+      try{
+        const updatedRec={...((event.records||[])[recIdx]),dates:selDates};
+        const res=await api.put('/events/'+MID+'/records/'+recIdx, updatedRec);
+        if(res.error){throw new Error(res.error);}
+        event.records[recIdx]=updatedRec;
+        upCount();
+        const s=el('div','splash');
+        s.innerHTML=`<div class="splash-icon">✅</div><div class="splash-name">${selName}（${selParent}）</div><div class="splash-sub">修正完了！</div>`;
+        document.body.appendChild(s);setTimeout(()=>{s.remove();showStep0();},2000);
+      }catch(e){
+        alert('保存に失敗しました: '+e.message);
+      }
+    };
   }
 
   // ── Step1：学年選択 ──

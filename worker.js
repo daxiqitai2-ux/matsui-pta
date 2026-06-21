@@ -4,11 +4,6 @@ export default {
     if (url.pathname.startsWith('/api/nisshi')) {
       return handleNisshi(request, env, url);
     }
-    if (url.pathname === '/nisshi/input') {
-      const assetUrl = new URL(request.url);
-      assetUrl.pathname = '/nisshi-input.html';
-      return env.ASSETS.fetch(new Request(assetUrl.toString(), request));
-    }
     if (url.pathname.startsWith('/api/')) {
       return handleAPI(request, env, url);
     }

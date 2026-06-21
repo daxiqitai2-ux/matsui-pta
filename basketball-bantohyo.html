@@ -633,8 +633,9 @@ function renderWeek(weeks, title, records) {
         const c = getColorByParent(p.parent);
         html += `<span class="person-badge" style="background:${c.bg};color:${c.text}">${shortName(p.name)}(${p.parent||'?'})</span>`;
       });
-      // 編集ボタン
-      html += `<span class="edit-btn" onclick="openModal('${d.date}','${slot.key}')">＋</span>`;
+      // 編集ボタン（data属性でキーを渡す）
+      const slotIdx = SLOTS.indexOf(slot);
+      html += `<span class="edit-btn" data-date="${d.date}" data-idx="${slotIdx}" onclick="openModalByEl(this)">＋</span>`;
       html += '</div>';
     });
     html += '</div>';
@@ -730,6 +731,12 @@ function clearStatus() {
 // ==================== モーダル ====================
 let modalDate = '';
 let modalSlotKey = '';
+
+function openModalByEl(el) {
+  const date = el.getAttribute('data-date');
+  const idx = parseInt(el.getAttribute('data-idx'));
+  openModal(date, SLOTS[idx].key);
+}
 
 function openModal(date, slotKey) {
   modalDate = date;

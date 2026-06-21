@@ -188,7 +188,8 @@ async function init() {
     renderCalendar([]);
     return;
   }
-  const list = Array.isArray(events) ? events : Object.values(events);
+  const list = (Array.isArray(events) ? events : Object.values(events))
+    .sort((a,b) => (b.id||'').localeCompare(a.id||''));
   if (list.length === 0) {
     sel.innerHTML = '<option value="">イベントなし</option>';
     showStatus('⚠️ イベントが登録されていません','warn');

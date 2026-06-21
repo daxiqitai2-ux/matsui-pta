@@ -42,7 +42,7 @@ body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(1
 .slot-cell { min-height:48px; border-radius:8px; padding:4px; font-size:.58rem; background:#f5f7fc; display:flex; flex-direction:column; gap:2px; }
 .slot-cell.weekend-sun { background:#fff5f5; }
 .slot-cell.weekend-sat { background:#f5f0ff; }
-.person-badge { display:inline-flex; align-items:center; border-radius:4px; padding:2px 5px; font-size:.58rem; font-weight:700; line-height:1.4; }
+.person-badge { display:inline-flex; align-items:center; border-radius:4px; padding:2px 5px; font-size:.58rem; font-weight:700; line-height:1.4; white-space:normal; word-break:break-all; }
 .edit-btn { display:inline-block; font-size:.65rem; color:#aaa; cursor:pointer; margin-top:2px; user-select:none; }
 .edit-btn:hover { color:var(--navy); }
 
@@ -235,7 +235,7 @@ function getPeople(records, date, slotKey) {
   return people;
 }
 
-function shortName(n) { return n.length <= 5 ? n : n.slice(0,4)+'…'; }
+function shortName(n) { return n; }
 
 function renderWeek(weeks, title, records) {
   let h = '<div class="cal-section"><div class="cal-section-title">📅 ' + title + '</div>';

@@ -42,7 +42,7 @@ body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(1
 .slot-cell { min-height:48px; border-radius:8px; padding:4px; font-size:.58rem; background:#f5f7fc; display:flex; flex-direction:column; gap:2px; overflow:visible; height:auto; }
 .slot-cell.weekend-sun { background:#fff5f5; }
 .slot-cell.weekend-sat { background:#f5f0ff; }
-.person-badge { display:block; border-radius:4px; padding:2px 5px; font-size:.58rem; font-weight:700; line-height:1.4; white-space:normal; word-break:break-all; width:100%; }
+.person-badge { display:block; border-radius:4px; padding:2px 4px; font-size:.52rem; font-weight:700; line-height:1.4; white-space:normal; word-break:break-all; width:100%; }
 .edit-btn { display:inline-block; font-size:.65rem; color:#aaa; cursor:pointer; margin-top:2px; user-select:none; }
 .edit-btn:hover { color:var(--navy); }
 
@@ -250,7 +250,7 @@ function renderWeek(weeks, title, records) {
       h += '<div class="slot-cell ' + cls + '">';
       people.forEach(p => {
         const c = colorOf(p.parent);
-        h += '<span class="person-badge" style="background:' + c.bg + ';color:' + c.text + '">' + shortName(p.name) + '(' + (p.parent||'?') + ')</span>';
+        h += '<span class="person-badge" style="background:' + c.bg + ';color:' + c.text + '">' + shortName(p.name) + '<br><span style="font-size:.5rem;opacity:.8">' + (p.parent||'?') + '</span></span>';
       });
       // 編集ボタン（data属性でindexを渡す）
       h += '<span class="edit-btn" data-di="' + di + '" data-si="' + si + '" data-week="' + (title.startsWith('8/9') ? '2' : '3') + '" onclick="openModalByAttr(this)">＋</span>';

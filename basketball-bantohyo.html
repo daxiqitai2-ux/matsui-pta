@@ -7,399 +7,73 @@
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --navy:    #1a3a6b;
-  --gold:    #c8a200;
-  --sky:     #4a90d9;
-  --mint:    #3ab89a;
-  --cream:   #fff8ef;
-  --pale:    #e8f0fb;
-  --muted:   #7a8a99;
-  --border:  #d0d8e8;
-  --bg:      #f0f4fb;
+  --navy: #1a3a6b; --gold: #c8a200; --sky: #4a90d9;
+  --cream: #fff8ef; --pale: #e8f0fb; --muted: #7a8a99;
+  --border: #d0d8e8; --bg: #f0f4fb;
 }
+body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(135deg,#e8f0fb 0%,#f0f4fb 60%,#fff8ef 100%); min-height:100vh; padding:16px; }
 
-body {
-  font-family: 'Zen Maru Gothic', sans-serif;
-  background: linear-gradient(135deg, #e8f0fb 0%, #f0f4fb 60%, #fff8ef 100%);
-  min-height: 100vh;
-  padding: 16px;
-}
+.app-header { text-align:center; padding:20px 16px 16px; background:white; border-radius:20px; margin-bottom:16px; box-shadow:0 3px 16px rgba(26,58,107,.12); position:relative; overflow:hidden; }
+.app-header::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background:linear-gradient(90deg,var(--navy),var(--gold),var(--sky)); }
+.app-header h1 { font-size:1.4rem; font-weight:900; color:var(--navy); }
+.app-header h1 span { color:var(--gold); }
+.app-header .subtitle { font-size:.78rem; color:var(--muted); margin-top:4px; }
 
-/* ヘッダー */
-.app-header {
-  text-align: center;
-  padding: 20px 16px 16px;
-  background: white;
-  border-radius: 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 3px 16px rgba(26,58,107,0.12);
-  position: relative;
-  overflow: hidden;
-}
-.app-header::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 5px;
-  background: linear-gradient(90deg, var(--navy), var(--gold), var(--sky));
-}
-.app-header h1 {
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: var(--navy);
-  letter-spacing: .05em;
-}
-.app-header h1 span {
-  color: var(--gold);
-}
-.app-header .subtitle {
-  font-size: .78rem;
-  color: var(--muted);
-  margin-top: 4px;
-}
+.event-selector { background:white; border-radius:16px; padding:14px 16px; margin-bottom:16px; box-shadow:0 2px 10px rgba(26,58,107,.08); }
+.event-selector label { font-size:.78rem; font-weight:700; color:var(--navy); display:block; margin-bottom:6px; }
+.event-selector select { width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border); font-family:'Zen Maru Gothic',sans-serif; font-size:.85rem; color:var(--navy); background:var(--pale); outline:none; }
+.reload-btn { display:block; width:100%; margin-top:10px; padding:10px; border:none; border-radius:10px; background:linear-gradient(135deg,var(--navy),var(--sky)); color:white; font-family:'Zen Maru Gothic',sans-serif; font-size:.85rem; font-weight:700; cursor:pointer; }
 
-/* イベント選択 */
-.event-selector {
-  background: white;
-  border-radius: 16px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(26,58,107,0.08);
-}
-.event-selector label {
-  font-size: .78rem;
-  font-weight: 700;
-  color: var(--navy);
-  display: block;
-  margin-bottom: 6px;
-}
-.event-selector select {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-size: .85rem;
-  color: var(--navy);
-  background: var(--pale);
-  cursor: pointer;
-  outline: none;
-}
-.event-selector select:focus {
-  border-color: var(--sky);
-  box-shadow: 0 0 0 3px rgba(74,144,217,0.15);
-}
+.legend { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.legend-item { display:flex; align-items:center; gap:4px; font-size:.7rem; color:var(--muted); background:white; border-radius:20px; padding:3px 8px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.legend-dot { width:10px; height:10px; border-radius:50%; }
 
-/* 更新ボタン */
-.reload-btn {
-  display: block;
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--navy), var(--sky));
-  color: white;
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-size: .85rem;
-  font-weight: 700;
-  cursor: pointer;
-  letter-spacing: .05em;
-}
-.reload-btn:hover { opacity: .9; }
+.cal-section { background:white; border-radius:16px; padding:14px; margin-bottom:16px; box-shadow:0 2px 10px rgba(26,58,107,.08); }
+.cal-section-title { font-size:.9rem; font-weight:900; color:var(--navy); margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid var(--pale); }
+.day-header-row { display:grid; grid-template-columns:80px repeat(7,1fr); gap:3px; margin-bottom:4px; }
+.day-header { text-align:center; font-size:.68rem; font-weight:700; padding:4px 2px; border-radius:8px; }
+.day-header.sun { background:#fde8e8; color:#c0392b; }
+.day-header.sat { background:#e8f0fb; color:#2563b5; }
+.day-header.week { background:var(--pale); color:var(--navy); }
+.slot-label-header { font-size:.68rem; color:var(--muted); display:flex; align-items:center; padding-left:2px; }
+.slot-row { display:grid; grid-template-columns:80px repeat(7,1fr); gap:3px; margin-bottom:3px; }
+.slot-label { font-size:.62rem; color:var(--muted); font-weight:700; display:flex; align-items:center; padding:4px 2px 4px 4px; background:var(--pale); border-radius:8px; line-height:1.3; }
+.slot-cell { min-height:48px; border-radius:8px; padding:4px; font-size:.58rem; background:#f5f7fc; display:flex; flex-direction:column; gap:2px; }
+.slot-cell.weekend-sun { background:#fff5f5; }
+.slot-cell.weekend-sat { background:#f5f0ff; }
+.person-badge { display:inline-flex; align-items:center; border-radius:4px; padding:2px 5px; font-size:.58rem; font-weight:700; line-height:1.4; }
+.edit-btn { display:inline-block; font-size:.65rem; color:#aaa; cursor:pointer; margin-top:2px; user-select:none; }
+.edit-btn:hover { color:var(--navy); }
 
-/* 凡例 */
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: .7rem;
-  color: var(--muted);
-  background: white;
-  border-radius: 20px;
-  padding: 3px 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-}
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
+.stats-section { background:white; border-radius:16px; padding:14px; margin-bottom:16px; box-shadow:0 2px 10px rgba(26,58,107,.08); }
+.stats-title { font-size:.9rem; font-weight:900; color:var(--navy); margin-bottom:10px; }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; }
+.stat-card { border-radius:10px; padding:10px; display:flex; align-items:center; gap:8px; }
+.stat-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:900; flex-shrink:0; color:white; }
+.stat-name { font-size:.75rem; font-weight:700; }
+.stat-count { font-size:.65rem; color:var(--muted); }
 
-/* カレンダーコンテナ */
-.cal-section {
-  background: white;
-  border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(26,58,107,0.08);
-}
-.cal-section-title {
-  font-size: .9rem;
-  font-weight: 900;
-  color: var(--navy);
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--pale);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+.loading { text-align:center; padding:40px; color:var(--muted); font-size:.9rem; }
+.app-footer { text-align:center; font-size:.72rem; color:var(--muted); margin-top:8px; padding-bottom:20px; }
+.status-msg { text-align:center; padding:12px; border-radius:10px; font-size:.8rem; margin-bottom:12px; }
+.status-msg.info { background:var(--pale); color:var(--navy); }
+.status-msg.warn { background:#fff8e0; color:#8a6c00; }
+.status-msg.error { background:#fde8e8; color:#c0392b; }
 
-/* 曜日ヘッダー */
-.day-header-row {
-  display: grid;
-  grid-template-columns: 80px repeat(7, 1fr);
-  gap: 3px;
-  margin-bottom: 4px;
-}
-.day-header {
-  text-align: center;
-  font-size: .68rem;
-  font-weight: 700;
-  padding: 4px 2px;
-  border-radius: 8px;
-}
-.day-header.sun { background: #fde8e8; color: #c0392b; }
-.day-header.sat { background: #e8f0fb; color: #2563b5; }
-.day-header.week { background: var(--pale); color: var(--navy); }
-.slot-label-header { font-size: .68rem; color: var(--muted); display: flex; align-items: center; padding-left: 2px; }
-
-/* スロット行 */
-.slot-row {
-  display: grid;
-  grid-template-columns: 80px repeat(7, 1fr);
-  gap: 3px;
-  margin-bottom: 3px;
-}
-.slot-label {
-  font-size: .62rem;
-  color: var(--muted);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  padding: 4px 2px 4px 4px;
-  background: var(--pale);
-  border-radius: 8px;
-  line-height: 1.3;
-}
-
-/* セル */
-.slot-cell {
-  min-height: 48px;
-  border-radius: 8px;
-  padding: 4px;
-  font-size: .58rem;
-  background: #f5f7fc;
-  border: 1.5px solid transparent;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  position: relative;
-}
-.slot-cell.weekend-sun { background: #fff5f5; }
-.slot-cell.weekend-sat { background: #f5f0ff; }
-
-/* バッジ */
-.person-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  border-radius: 4px;
-  padding: 1px 4px;
-  font-size: .55rem;
-  font-weight: 700;
-  line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-/* 統計 */
-.stats-section {
-  background: white;
-  border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(26,58,107,0.08);
-}
-.stats-title {
-  font-size: .9rem;
-  font-weight: 900;
-  color: var(--navy);
-  margin-bottom: 10px;
-}
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 8px;
-}
-.stat-card {
-  border-radius: 10px;
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.stat-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .85rem;
-  font-weight: 900;
-  flex-shrink: 0;
-}
-.stat-name { font-size: .75rem; font-weight: 700; }
-.stat-count { font-size: .65rem; color: var(--muted); }
-
-/* ローディング */
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: var(--muted);
-  font-size: .9rem;
-}
-.loading-dots::after {
-  content: '';
-  animation: dots 1.2s steps(3, end) infinite;
-}
-@keyframes dots {
-  0%, 20% { content: '.'; }
-  40% { content: '..'; }
-  60%, 100% { content: '...'; }
-}
-
-/* フッター */
-.app-footer {
-  text-align: center;
-  font-size: .72rem;
-  color: var(--muted);
-  margin-top: 8px;
-  padding-bottom: 20px;
-}
-
-/* ステータスメッセージ */
-.status-msg {
-  text-align: center;
-  padding: 12px;
-  border-radius: 10px;
-  font-size: .8rem;
-  margin-bottom: 12px;
-}
-.status-msg.info { background: var(--pale); color: var(--navy); }
-.status-msg.warn { background: #fff8e0; color: #8a6c00; }
-.status-msg.error { background: #fde8e8; color: #c0392b; }
-
-/* 編集モーダル */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 100;
-  align-items: center;
-  justify-content: center;
-}
-.modal-overlay.show { display: flex; }
-.modal-box {
-  background: white;
-  border-radius: 20px;
-  padding: 20px;
-  width: 90%;
-  max-width: 360px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
-.modal-title {
-  font-size: .95rem;
-  font-weight: 900;
-  color: var(--navy);
-  margin-bottom: 14px;
-}
-.modal-list {
-  margin-bottom: 14px;
-}
-.modal-person {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border-radius: 8px;
-  margin-bottom: 6px;
-  font-size: .82rem;
-  font-weight: 700;
-}
-.modal-person .del-btn {
-  background: none;
-  border: none;
-  color: #e53e3e;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0 4px;
-}
-.modal-add {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.modal-add input {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-size: .82rem;
-}
-.modal-add select {
-  padding: 8px 6px;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-size: .82rem;
-  background: var(--pale);
-}
-.modal-add button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: var(--navy);
-  color: white;
-  font-size: .82rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.modal-close {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
-  background: var(--pale);
-  color: var(--navy);
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-size: .85rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.edit-btn {
-  display: inline-block;
-  font-size: .65rem;
-  color: var(--muted);
-  cursor: pointer;
-  margin-top: 2px;
-  user-select: none;
-}
-.edit-btn:hover { color: var(--navy); }
+/* モーダル */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:center; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal-box { background:white; border-radius:20px; padding:20px; width:90%; max-width:360px; box-shadow:0 8px 32px rgba(0,0,0,.2); }
+.modal-title { font-size:.95rem; font-weight:900; color:var(--navy); margin-bottom:14px; }
+.modal-list { margin-bottom:14px; min-height:30px; }
+.modal-person { display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:8px; margin-bottom:6px; font-size:.82rem; font-weight:700; }
+.modal-person .del-btn { background:none; border:none; color:#e53e3e; font-size:1rem; cursor:pointer; padding:0 4px; }
+.modal-add { display:flex; gap:6px; margin-bottom:12px; }
+.modal-add input { flex:1; padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; font-family:'Zen Maru Gothic',sans-serif; font-size:.82rem; outline:none; }
+.modal-add select { padding:8px 6px; border:1.5px solid var(--border); border-radius:8px; font-family:'Zen Maru Gothic',sans-serif; font-size:.82rem; background:var(--pale); }
+.modal-add .add-btn { padding:8px 12px; border:none; border-radius:8px; background:var(--navy); color:white; font-size:.82rem; font-weight:700; cursor:pointer; }
+.modal-close { width:100%; padding:10px; border:none; border-radius:10px; background:var(--pale); color:var(--navy); font-family:'Zen Maru Gothic',sans-serif; font-size:.85rem; font-weight:700; cursor:pointer; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -409,404 +83,20 @@ body {
   <div class="subtitle">西武文理バスケ合宿サポーター 2026年8月</div>
 </div>
 
-<!-- イベント選択 -->
 <div class="event-selector">
   <label>📋 イベントを選択</label>
-  <select id="eventSelect">
-    <option value="">読み込み中...</option>
-  </select>
+  <select id="eventSelect"><option value="">読み込み中...</option></select>
   <button class="reload-btn" onclick="reloadData()">🔄 最新データを取得</button>
 </div>
 
 <div id="statusMsg"></div>
-
-<!-- カレンダー -->
-<div id="calendarArea">
-  <div class="loading">データを読み込み中<span class="loading-dots"></span></div>
-</div>
-
-<!-- 統計 -->
+<div id="calendarArea"><div class="loading">データを読み込み中...</div></div>
 <div id="statsArea"></div>
 
 <div class="app-footer">🏀 バスケ部 当番表 2026</div>
 
-<script>
-// ==================== 設定 ====================
-const WEEK2 = [
-  { date:'8/9',  label:'8/9(日)',  dow:'sun' },
-  { date:'8/10', label:'8/10(月)', dow:'week' },
-  { date:'8/11', label:'8/11(火)', dow:'week' },
-  { date:'8/12', label:'8/12(水)', dow:'week' },
-  { date:'8/13', label:'8/13(木)', dow:'week' },
-  { date:'8/14', label:'8/14(金)', dow:'week' },
-  { date:'8/15', label:'8/15(土)', dow:'sat' },
-];
-const WEEK3 = [
-  { date:'8/16', label:'8/16(日)', dow:'sun' },
-  { date:'8/17', label:'8/17(月)', dow:'week' },
-  { date:'8/18', label:'8/18(火)', dow:'week' },
-  { date:'8/19', label:'8/19(水)', dow:'week' },
-  { date:'8/20', label:'8/20(木)', dow:'week' },
-  { date:'8/21', label:'8/21(金)', dow:'week' },
-  { date:'8/22', label:'8/22(土)', dow:'sat' },
-];
-
-// 当番スロット（文理バスケと同じ）
-// 当番スロット（seibu-supportersのdata-t値と完全一致させる）
-const SLOTS = [
-  { key:'1事前準備',           label:'①事前準備' },
-  { key:'2本部 8:30〜11:00',   label:'②本部\n8:30〜11:00' },
-  { key:'3本部 11:00〜13:30',  label:'③本部\n11:00〜13:30' },
-  { key:'4本部 13:30〜16:00',  label:'④本部\n13:30〜16:00' },
-  { key:'5本部 16:00〜18:30',  label:'⑤本部\n16:00〜18:30' },
-  { key:'6本部 終日 8:30〜18:30', label:'⑥本部(終日)\n8:30〜18:30' },
-  { key:'7食堂 10:00〜15:00',  label:'⑦食堂\n10:00〜15:00' },
-  { key:'8弁当配達 10:30〜',   label:'⑧弁当配達\n10:30〜' },
-];
-
-// ==================== カラー（父:青 母:ピンク） ====================
-const COLOR_FATHER = { bg:'#dbeafe', text:'#1e3a8a', dot:'#3b82f6' };
-const COLOR_MOTHER = { bg:'#fde8f0', text:'#9d174d', dot:'#ec4899' };
-const COLOR_OTHER  = { bg:'#f3f4f6', text:'#374151', dot:'#6b7280' };
-
-];
-
-// ==================== 状態 ====================
-let currentRecords = [];
-let personColorMap = {};
-let colorIdx = 0;
-
-// ==================== API ====================
-async function fetchEvents() {
-  try {
-    const res = await fetch('/api/seibu/events');
-    if (!res.ok) throw new Error('API error: ' + res.status);
-    const data = await res.json();
-    return data;
-  } catch(e) {
-    console.error(e);
-    return null;
-  }
-}
-
-async function fetchEventRecords(eventId) {
-  try {
-    const res = await fetch('/api/seibu/events/' + eventId);
-    if (!res.ok) throw new Error('API error: ' + res.status);
-    const data = await res.json();
-    return data.records || [];
-  } catch(e) {
-    console.error(e);
-    return null;
-  }
-}
-
-// ==================== 初期化 ====================
-async function init() {
-  showStatus('イベント一覧を取得中...', 'info');
-  const events = await fetchEvents();
-  const sel = document.getElementById('eventSelect');
-  
-  if (!events || typeof events !== 'object') {
-    sel.innerHTML = '<option value="">取得失敗 - イベントがありません</option>';
-    showStatus('❌ イベント情報を取得できませんでした。ネットワーク接続を確認してください。', 'error');
-    document.getElementById('calendarArea').innerHTML = getOfflineCalendar();
-    return;
-  }
-
-  // eventsはオブジェクト or 配列
-  const eventList = Array.isArray(events) ? events : Object.values(events);
-  const aug = eventList.filter(e => {
-    // 8月のイベントを優先
-    if (e.date && e.date.includes('2026-08')) return true;
-    return true; // 全部表示
-  });
-
-  if (aug.length === 0) {
-    sel.innerHTML = '<option value="">イベントが登録されていません</option>';
-    showStatus('⚠️ 文理バスケアプリにイベントが登録されていません。', 'warn');
-    document.getElementById('calendarArea').innerHTML = getOfflineCalendar();
-    return;
-  }
-
-  sel.innerHTML = aug.map(e =>
-    `<option value="${e.id}">${e.title || e.id}${e.date ? ' ('+e.date+')' : ''}</option>`
-  ).join('');
-
-  clearStatus();
-  await loadEvent(aug[0].id);
-  
-  sel.addEventListener('change', () => {
-    if (sel.value) loadEvent(sel.value);
-  });
-}
-
-async function loadEvent(eventId) {
-  showStatus('登録データを取得中...', 'info');
-  const records = await fetchEventRecords(eventId);
-  
-  if (!records) {
-    showStatus('❌ 登録データを取得できませんでした。', 'error');
-    document.getElementById('calendarArea').innerHTML = getOfflineCalendar();
-    return;
-  }
-  
-  clearStatus();
-  currentRecords = records;
-  buildPersonColors(records);
-  renderCalendar(records);
-  renderStats(records);
-}
-
-async function reloadData() {
-  const sel = document.getElementById('eventSelect');
-  if (sel.value) {
-    await loadEvent(sel.value);
-  } else {
-    await init();
-  }
-}
-
-// ==================== カラー取得 ====================
-function getColorByParent(parent) {
-  if (!parent) return COLOR_OTHER;
-  if (parent === '父') return COLOR_FATHER;
-  if (parent === '母') return COLOR_MOTHER;
-  return COLOR_OTHER;
-}
-
-function buildPersonColors(records) {
-  // 父母カラーのみ使用するため何もしない
-}
-
-// ==================== カレンダー描画 ====================
-function getRegisteredPeopleForSlot(records, date, slotKey) {
-  const people = []; // [{name, parent}]
-  records.forEach(r => {
-    const name = r.studentName || r.name || '不明';
-    const parent = r.parent || '';
-    (r.dates || []).forEach(d => {
-      if (d.date === date && d.time === slotKey) {
-        people.push({name, parent});
-      }
-    });
-  });
-  // 手動入力も追加
-  const key = date + '___' + slotKey;
-  (manualData[key] || []).forEach(m => people.push(m));
-  return people;
-}
-
-// デバッグ用
-function debugRecords(records) {
-  console.log('=== 登録データ件数:', records.length);
-  records.slice(0, 5).forEach(r => {
-    console.log('名前:', r.studentName || r.name);
-    (r.dates || []).forEach(d => {
-      console.log('  date:', JSON.stringify(d.date), '/ time:', JSON.stringify(d.time));
-    });
-  });
-  console.log('=== SLOTSキー:');
-  SLOTS.forEach(s => console.log(' key=', JSON.stringify(s.key)));
-}
-
-function renderWeek(weeks, title, records) {
-  let html = `<div class="cal-section"><div class="cal-section-title">📅 ${title}</div>`;
-  
-  // 曜日ヘッダー
-  html += `<div class="day-header-row">
-    <div class="slot-label-header"></div>`;
-  weeks.forEach(d => {
-    html += `<div class="day-header ${d.dow}">${d.label}</div>`;
-  });
-  html += '</div>';
-  
-  // スロット行
-  SLOTS.forEach(slot => {
-    html += `<div class="slot-row">
-      <div class="slot-label">${slot.label.replace('\n', '<br>')}</div>`;
-    weeks.forEach(d => {
-      const people = getRegisteredPeopleForSlot(records, d.date, slot.key);
-      const cls = d.dow === 'sun' ? 'weekend-sun' : d.dow === 'sat' ? 'weekend-sat' : '';
-      html += `<div class="slot-cell ${cls}">`;
-      people.forEach(p => {
-        const c = getColorByParent(p.parent);
-        html += `<span class="person-badge" style="background:${c.bg};color:${c.text}">${shortName(p.name)}(${p.parent||'?'})</span>`;
-      });
-      // 編集ボタン（data属性でキーを渡す）
-      const slotIdx = SLOTS.indexOf(slot);
-      html += `<span class="edit-btn" data-date="${d.date}" data-idx="${slotIdx}" onclick="openModalByEl(this)">＋</span>`;
-      html += '</div>';
-    });
-    html += '</div>';
-  });
-  
-  html += '</div>';
-  return html;
-}
-
-function shortName(name) {
-  // 名前を短縮（8文字以上は省略）
-  if (name.length <= 5) return name;
-  return name.slice(0, 4) + '…';
-}
-
-function renderCalendar(records) {
-  debugRecords(records);
-  let html = '';
-  
-  // 凡例
-  html += `<div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:${COLOR_FATHER.dot}"></div>父</div>
-    <div class="legend-item"><div class="legend-dot" style="background:${COLOR_MOTHER.dot}"></div>母</div>
-    <div class="legend-item"><div class="legend-dot" style="background:${COLOR_OTHER.dot}"></div>手動入力</div>
-  </div>`;
-  
-  html += renderWeek(WEEK2, '8/9週（8/9〜8/15）', records);
-  html += renderWeek(WEEK3, '8/16週（8/16〜8/22）', records);
-  
-  if (records.length === 0) {
-    html += '<div class="status-msg info">📋 まだ登録者がいません</div>';
-  }
-  
-  document.getElementById('calendarArea').innerHTML = html;
-}
-
-// ==================== 統計 ====================
-function renderStats(records) {
-  if (records.length === 0) {
-    document.getElementById('statsArea').innerHTML = '';
-    return;
-  }
-  
-  // 担当コマ数を集計
-  const counts = {};
-  records.forEach(r => {
-    const name = r.studentName || r.name || '不明';
-    const parent = r.parent || '';
-    if (!counts[name]) counts[name] = {cnt:0, parent};
-    counts[name].cnt += (r.dates ? r.dates.length : 0);
-  });
-  
-  let html = `<div class="stats-section">
-    <div class="stats-title">👥 担当者一覧</div>
-    <div class="stats-grid">`;
-  
-  Object.entries(counts).sort((a,b) => b[1].cnt - a[1].cnt).forEach(([name, info]) => {
-    const c = getColorByParent(info.parent);
-    const initial = name.charAt(0);
-    html += `<div class="stat-card" style="background:${c.bg}">
-      <div class="stat-avatar" style="background:${c.dot};color:white">${initial}</div>
-      <div>
-        <div class="stat-name" style="color:${c.text}">${name}（${info.parent||'?'}）</div>
-        <div class="stat-count">${info.cnt} コマ担当</div>
-      </div>
-    </div>`;
-  });
-  
-  html += '</div></div>';
-  document.getElementById('statsArea').innerHTML = html;
-}
-
-// ==================== オフライン用カレンダー ====================
-function getOfflineCalendar() {
-  // APIが使えないときの空カレンダー
-  buildPersonColors([]);
-  let html = renderWeek(WEEK2, '8/9週（8/9〜8/15）', []);
-  html += renderWeek(WEEK3, '8/16週（8/16〜8/22）', []);
-  html += '<div class="status-msg warn">💡 文理バスケアプリから登録すると、ここに自動で当番が表示されます</div>';
-  return html;
-}
-
-// ==================== ユーティリティ ====================
-function showStatus(msg, type='info') {
-  document.getElementById('statusMsg').innerHTML =
-    `<div class="status-msg ${type}">${msg}</div>`;
-}
-function clearStatus() {
-  document.getElementById('statusMsg').innerHTML = '';
-}
-
-
-// ==================== モーダル ====================
-let modalDate = '';
-let modalSlotKey = '';
-
-function openModalByEl(el) {
-  const date = el.getAttribute('data-date');
-  const idx = parseInt(el.getAttribute('data-idx'));
-  openModal(date, SLOTS[idx].key);
-}
-
-function openModal(date, slotKey) {
-  modalDate = date;
-  modalSlotKey = slotKey;
-  const slotInfo = SLOTS.find(s => s.key === slotKey);
-  const label = slotInfo ? slotInfo.label.replace('\n', ' ') : slotKey;
-  document.getElementById('modalTitle').textContent = `✏️ ${date} ${label}`;
-  renderModalList();
-  document.getElementById('editModal').classList.add('show');
-  document.getElementById('modalInput').focus();
-}
-
-function renderModalList() {
-  const key = modalDate + '___' + modalSlotKey;
-  // API登録者
-  const apiPeople = getRegisteredPeopleForSlot(currentRecords, modalDate, modalSlotKey)
-    .filter(p => !(manualData[key] || []).find(m => m.name === p.name));
-  // 手動登録者
-  const manualPeople = manualData[key] || [];
-  
-  let html = '';
-  apiPeople.forEach(p => {
-    const c = getColorByParent(p.parent);
-    html += `<div class="modal-person" style="background:${c.bg};color:${c.text}">
-      <span>${p.name}（${p.parent||'?'}）</span>
-      <span style="font-size:.7rem;color:var(--muted)">登録済</span>
-    </div>`;
-  });
-  manualPeople.forEach((p, i) => {
-    const c = getColorByParent(p.parent);
-    html += `<div class="modal-person" style="background:${c.bg};color:${c.text}">
-      <span>${p.name}（${p.parent}）</span>
-      <button class="del-btn" onclick="deleteManual('${key}',${i})">✕</button>
-    </div>`;
-  });
-  if (!html) html = '<div style="color:var(--muted);font-size:.8rem;padding:4px">まだ登録なし</div>';
-  document.getElementById('modalList').innerHTML = html;
-}
-
-function addManual() {
-  const name = document.getElementById('modalInput').value.trim();
-  const parent = document.getElementById('modalParent').value;
-  if (!name) return;
-  const key = modalDate + '___' + modalSlotKey;
-  if (!manualData[key]) manualData[key] = [];
-  manualData[key].push({name, parent});
-  document.getElementById('modalInput').value = '';
-  renderModalList();
-  renderCalendar(currentRecords);
-}
-
-function deleteManual(key, idx) {
-  manualData[key].splice(idx, 1);
-  renderModalList();
-  renderCalendar(currentRecords);
-}
-
-function closeModal(e) {
-  if (e.target === document.getElementById('editModal')) closeModalBtn();
-}
-function closeModalBtn() {
-  document.getElementById('editModal').classList.remove('show');
-}
-
-// ==================== 起動 ====================
-window.addEventListener('DOMContentLoaded', init);
-</script>
-
 <!-- 編集モーダル -->
-<div class="modal-overlay" id="editModal" onclick="closeModal(event)">
+<div class="modal-overlay" id="editModal">
   <div class="modal-box">
     <div class="modal-title" id="modalTitle"></div>
     <div class="modal-list" id="modalList"></div>
@@ -816,10 +106,282 @@ window.addEventListener('DOMContentLoaded', init);
         <option value="父">父</option>
         <option value="母">母</option>
       </select>
-      <button onclick="addManual()">追加</button>
+      <button class="add-btn" onclick="addManual()">追加</button>
     </div>
-    <button class="modal-close" onclick="closeModalBtn()">✕ 閉じる</button>
+    <button class="modal-close" onclick="closeModal()">✕ 閉じる</button>
   </div>
 </div>
+
+<script>
+// ===== 週定義 =====
+const WEEK2 = [
+  {date:'8/9',  label:'8/9(日)',  dow:'sun'},
+  {date:'8/10', label:'8/10(月)', dow:'week'},
+  {date:'8/11', label:'8/11(火)', dow:'week'},
+  {date:'8/12', label:'8/12(水)', dow:'week'},
+  {date:'8/13', label:'8/13(木)', dow:'week'},
+  {date:'8/14', label:'8/14(金)', dow:'week'},
+  {date:'8/15', label:'8/15(土)', dow:'sat'},
+];
+const WEEK3 = [
+  {date:'8/16', label:'8/16(日)', dow:'sun'},
+  {date:'8/17', label:'8/17(月)', dow:'week'},
+  {date:'8/18', label:'8/18(火)', dow:'week'},
+  {date:'8/19', label:'8/19(水)', dow:'week'},
+  {date:'8/20', label:'8/20(木)', dow:'week'},
+  {date:'8/21', label:'8/21(金)', dow:'week'},
+  {date:'8/22', label:'8/22(土)', dow:'sat'},
+];
+
+// ===== スロット定義（seibu-supportersのdata-t値と一致） =====
+const SLOTS = [
+  {key:'1事前準備',            label:'①事前準備'},
+  {key:'2本部 8:30〜11:00',   label:'②本部\n8:30〜11:00'},
+  {key:'3本部 11:00〜13:30',  label:'③本部\n11:00〜13:30'},
+  {key:'4本部 13:30〜16:00',  label:'④本部\n13:30〜16:00'},
+  {key:'5本部 16:00〜18:30',  label:'⑤本部\n16:00〜18:30'},
+  {key:'6本部 終日 8:30〜18:30', label:'⑥本部(終日)\n8:30〜18:30'},
+  {key:'7食堂 10:00〜15:00',  label:'⑦食堂\n10:00〜15:00'},
+  {key:'8弁当配達 10:30〜',   label:'⑧弁当配達\n10:30〜'},
+];
+
+// ===== カラー =====
+const C_FATHER = {bg:'#dbeafe', text:'#1e3a8a', dot:'#3b82f6'};
+const C_MOTHER = {bg:'#fde8f0', text:'#9d174d', dot:'#ec4899'};
+const C_OTHER  = {bg:'#f3f4f6', text:'#374151', dot:'#9ca3af'};
+
+function colorOf(parent) {
+  if (parent === '父') return C_FATHER;
+  if (parent === '母') return C_MOTHER;
+  return C_OTHER;
+}
+
+// ===== 状態 =====
+let currentRecords = [];
+let manualData = {}; // key: "date|||slotKey" → [{name,parent}]
+
+// ===== API =====
+async function fetchEvents() {
+  try {
+    const r = await fetch('/api/seibu/events');
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+async function fetchEventRecords(id) {
+  try {
+    const r = await fetch('/api/seibu/events/' + id);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.records || [];
+  } catch(e) { return null; }
+}
+
+// ===== 初期化 =====
+async function init() {
+  showStatus('イベント一覧を取得中...','info');
+  const events = await fetchEvents();
+  const sel = document.getElementById('eventSelect');
+  if (!events || typeof events !== 'object') {
+    sel.innerHTML = '<option value="">取得失敗</option>';
+    showStatus('❌ 取得できませんでした','error');
+    renderCalendar([]);
+    return;
+  }
+  const list = Array.isArray(events) ? events : Object.values(events);
+  if (list.length === 0) {
+    sel.innerHTML = '<option value="">イベントなし</option>';
+    showStatus('⚠️ イベントが登録されていません','warn');
+    renderCalendar([]);
+    return;
+  }
+  sel.innerHTML = list.map(e =>
+    '<option value="' + e.id + '">' + (e.title||e.id) + (e.date?' ('+e.date+')':'') + '</option>'
+  ).join('');
+  clearStatus();
+  await loadEvent(list[0].id);
+  sel.addEventListener('change', () => { if(sel.value) loadEvent(sel.value); });
+}
+
+async function loadEvent(id) {
+  showStatus('登録データを取得中...','info');
+  const records = await fetchEventRecords(id);
+  if (!records) { showStatus('❌ データ取得失敗','error'); renderCalendar([]); return; }
+  clearStatus();
+  currentRecords = records;
+  renderCalendar(records);
+  renderStats(records);
+}
+
+async function reloadData() {
+  const sel = document.getElementById('eventSelect');
+  if (sel.value) await loadEvent(sel.value);
+  else await init();
+}
+
+// ===== カレンダー =====
+function getPeople(records, date, slotKey) {
+  const people = [];
+  records.forEach(r => {
+    const name = r.studentName || r.name || '不明';
+    const parent = r.parent || '';
+    (r.dates || []).forEach(d => {
+      if (d.date === date && d.time === slotKey) people.push({name, parent});
+    });
+  });
+  const mkey = date + '|||' + slotKey;
+  (manualData[mkey] || []).forEach(m => people.push(m));
+  return people;
+}
+
+function shortName(n) { return n.length <= 5 ? n : n.slice(0,4)+'…'; }
+
+function renderWeek(weeks, title, records) {
+  let h = '<div class="cal-section"><div class="cal-section-title">📅 ' + title + '</div>';
+  h += '<div class="day-header-row"><div class="slot-label-header"></div>';
+  weeks.forEach(d => { h += '<div class="day-header ' + d.dow + '">' + d.label + '</div>'; });
+  h += '</div>';
+  SLOTS.forEach((slot, si) => {
+    h += '<div class="slot-row"><div class="slot-label">' + slot.label.replace('\n','<br>') + '</div>';
+    weeks.forEach((d, di) => {
+      const people = getPeople(records, d.date, slot.key);
+      const cls = d.dow==='sun'?'weekend-sun':d.dow==='sat'?'weekend-sat':'';
+      h += '<div class="slot-cell ' + cls + '">';
+      people.forEach(p => {
+        const c = colorOf(p.parent);
+        h += '<span class="person-badge" style="background:' + c.bg + ';color:' + c.text + '">' + shortName(p.name) + '(' + (p.parent||'?') + ')</span>';
+      });
+      // 編集ボタン（data属性でindexを渡す）
+      h += '<span class="edit-btn" data-di="' + di + '" data-si="' + si + '" data-week="' + (title.startsWith('8/9') ? '2' : '3') + '" onclick="openModalByAttr(this)">＋</span>';
+      h += '</div>';
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function renderCalendar(records) {
+  let h = '<div class="legend">';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:' + C_FATHER.dot + '"></div>父</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:' + C_MOTHER.dot + '"></div>母</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:' + C_OTHER.dot + '"></div>手動入力</div>';
+  h += '</div>';
+  h += renderWeek(WEEK2, '8/9週（8/9〜8/15）', records);
+  h += renderWeek(WEEK3, '8/16週（8/16〜8/22）', records);
+  document.getElementById('calendarArea').innerHTML = h;
+}
+
+// ===== 統計 =====
+function renderStats(records) {
+  if (!records.length) { document.getElementById('statsArea').innerHTML = ''; return; }
+  const counts = {};
+  records.forEach(r => {
+    const name = r.studentName || r.name || '不明';
+    const parent = r.parent || '';
+    if (!counts[name]) counts[name] = {cnt:0, parent};
+    counts[name].cnt += (r.dates||[]).length;
+  });
+  let h = '<div class="stats-section"><div class="stats-title">👥 担当者一覧</div><div class="stats-grid">';
+  Object.entries(counts).sort((a,b)=>b[1].cnt-a[1].cnt).forEach(([name,info]) => {
+    const c = colorOf(info.parent);
+    h += '<div class="stat-card" style="background:' + c.bg + '">';
+    h += '<div class="stat-avatar" style="background:' + c.dot + '">' + name.charAt(0) + '</div>';
+    h += '<div><div class="stat-name" style="color:' + c.text + '">' + name + '（' + (info.parent||'?') + '）</div>';
+    h += '<div class="stat-count">' + info.cnt + ' コマ担当</div></div></div>';
+  });
+  h += '</div></div>';
+  document.getElementById('statsArea').innerHTML = h;
+}
+
+// ===== モーダル =====
+let modalDate = '';
+let modalSlotKey = '';
+
+function openModalByAttr(el) {
+  const si = parseInt(el.getAttribute('data-si'));
+  const di = parseInt(el.getAttribute('data-di'));
+  const week = el.getAttribute('data-week') === '2' ? WEEK2 : WEEK3;
+  openModal(week[di].date, SLOTS[si].key);
+}
+
+function openModal(date, slotKey) {
+  modalDate = date;
+  modalSlotKey = slotKey;
+  const slot = SLOTS.find(s => s.key === slotKey);
+  const label = slot ? slot.label.replace('\n',' ') : slotKey;
+  document.getElementById('modalTitle').textContent = '✏️ ' + date + ' ' + label;
+  renderModalList();
+  document.getElementById('editModal').classList.add('show');
+  document.getElementById('modalInput').value = '';
+  document.getElementById('modalInput').focus();
+}
+
+function renderModalList() {
+  const mkey = modalDate + '|||' + modalSlotKey;
+  const apiPeople = [];
+  currentRecords.forEach(r => {
+    const name = r.studentName || r.name || '不明';
+    const parent = r.parent || '';
+    (r.dates||[]).forEach(d => {
+      if (d.date === modalDate && d.time === modalSlotKey) apiPeople.push({name, parent});
+    });
+  });
+  const manualPeople = manualData[mkey] || [];
+  let h = '';
+  apiPeople.forEach(p => {
+    const c = colorOf(p.parent);
+    h += '<div class="modal-person" style="background:' + c.bg + ';color:' + c.text + '">';
+    h += '<span>' + p.name + '（' + (p.parent||'?') + '）</span>';
+    h += '<span style="font-size:.7rem;color:var(--muted)">登録済</span></div>';
+  });
+  manualPeople.forEach((p, i) => {
+    const c = colorOf(p.parent);
+    h += '<div class="modal-person" style="background:' + c.bg + ';color:' + c.text + '">';
+    h += '<span>' + p.name + '（' + p.parent + '）</span>';
+    h += '<button class="del-btn" onclick="deleteManual(' + i + ')">✕</button></div>';
+  });
+  if (!h) h = '<div style="color:var(--muted);font-size:.8rem;padding:4px">まだ登録なし</div>';
+  document.getElementById('modalList').innerHTML = h;
+}
+
+function addManual() {
+  const name = document.getElementById('modalInput').value.trim();
+  const parent = document.getElementById('modalParent').value;
+  if (!name) return;
+  const mkey = modalDate + '|||' + modalSlotKey;
+  if (!manualData[mkey]) manualData[mkey] = [];
+  manualData[mkey].push({name, parent});
+  document.getElementById('modalInput').value = '';
+  renderModalList();
+  renderCalendar(currentRecords);
+}
+
+function deleteManual(idx) {
+  const mkey = modalDate + '|||' + modalSlotKey;
+  manualData[mkey].splice(idx, 1);
+  renderModalList();
+  renderCalendar(currentRecords);
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.getElementById('modalInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addManual();
+});
+
+// ===== ユーティリティ =====
+function showStatus(msg, type) {
+  document.getElementById('statusMsg').innerHTML = '<div class="status-msg ' + type + '">' + msg + '</div>';
+}
+function clearStatus() { document.getElementById('statusMsg').innerHTML = ''; }
+
+// ===== 起動 =====
+window.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>

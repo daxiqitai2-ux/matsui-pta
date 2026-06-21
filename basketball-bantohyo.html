@@ -39,10 +39,10 @@ body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(1
 .slot-label-header { font-size:.68rem; color:var(--muted); display:flex; align-items:center; padding-left:2px; }
 .slot-row { display:grid; grid-template-columns:80px repeat(7,1fr); gap:3px; margin-bottom:3px; }
 .slot-label { font-size:.62rem; color:var(--muted); font-weight:700; display:flex; align-items:center; padding:4px 2px 4px 4px; background:var(--pale); border-radius:8px; line-height:1.3; }
-.slot-cell { min-height:48px; border-radius:8px; padding:4px; font-size:.58rem; background:#f5f7fc; display:flex; flex-direction:column; gap:2px; }
+.slot-cell { min-height:48px; border-radius:8px; padding:4px; font-size:.58rem; background:#f5f7fc; display:flex; flex-direction:column; gap:2px; overflow:visible; height:auto; }
 .slot-cell.weekend-sun { background:#fff5f5; }
 .slot-cell.weekend-sat { background:#f5f0ff; }
-.person-badge { display:inline-flex; align-items:center; border-radius:4px; padding:2px 5px; font-size:.58rem; font-weight:700; line-height:1.4; white-space:normal; word-break:break-all; }
+.person-badge { display:block; border-radius:4px; padding:2px 5px; font-size:.58rem; font-weight:700; line-height:1.4; white-space:normal; word-break:break-all; width:100%; }
 .edit-btn { display:inline-block; font-size:.65rem; color:#aaa; cursor:pointer; margin-top:2px; user-select:none; }
 .edit-btn:hover { color:var(--navy); }
 

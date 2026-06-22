@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>バスケ部 8月 当番表</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #1a3a6b; --gold: #c8a200; --sky: #4a90d9;
+  --pale: #e8f0fb; --muted: #7a8a99; --border: #d0d8e8;
+}
+body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(135deg,#e8f0fb 0%,#f0f4fb 60%,#fff8ef 100%); min-height:100vh; padding:16px; }
+
+.app-header { text-align:center; padding:20px 16px 16px; background:white; border-radius:20px; margin-bottom:16px; box-shadow:0 3px 16px rgba(26,58,107,.12); position:relative; overflow:hidden; }
+.app-header::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background:linear-gradient(90deg,var(--navy),var(--gold),var(--sky)); }
+.app-header h1 { font-size:1.4rem; font-weight:900; color:var(--navy); }
+.app-header h1 span { color:var(--gold); }
+.app-header .subtitle { font-size:.78rem; color:var(--muted); margin-top:4px; }
+
+.event-selector { background:white; border-radius:16px; padding:14px 16px; margin-bottom:16px; box-shadow:0 2px 10px rgba(26,58,107,.08); }
+.event-selector label { font-size:.78rem; font-weight:700; color:var(--navy); display:block; margin-bottom:6px; }
+.event-selector select { width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border); font-family:'Zen Maru Gothic',sans-serif; font-size:.85rem; color:var(--navy); background:var(--pale); outline:none; }
+.reload-btn { display:block; width:100%; margin-top:10px; padding:10px; border:none; border-radius:10px; background:linear-gradient(135deg,var(--navy),var(--sky)); color:white; font-family:'Zen Maru Gothic',sans-serif; font-size:.85rem; font-weight:700; cursor:pointer; }
+
+.legend { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.legend-item { display:flex; align-items:center; gap:4px; font-size:.7rem; color:var(--muted); background:white; border-radius:20px; padding:3px 8px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.legend-dot { width:10px; height:10px; border-radius:50%; }
+
+.cal-section { background:white; border-radius:16px; padding:14px; margin-bottom:16px; box-shadow:0 2px 10px rgba(26,58,107,.08); }
+.cal-section-title { font-size:.9rem; font-weight:900; color:var(--navy); margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid var(--pale); }
+.day-header-row { display:grid; grid-template-columns:80px repeat(7,1fr); gap:3px; margin-bottom:4px; }
+.day-header { text-align:center; font-size:.68rem; font-weight:700; padding:4px 2px; border-radius:8px; }
+.day-header.sun { background:#fde8e8; color:#c0392b; }
+.day-header.sat { background:#e8f0fb; color:#2563b5; }
+.day-header.week { background:var(--pale); color:var(--navy); }
+.slot-row { display:grid; grid-template-columns:80px repeat(7,1fr); gap:3px; margin-bottom:3px; }
+.slot-label { font-size:.62rem; color:var(--muted); font-weight:700; display:flex; align-items:center; padding:4px 2px 4px 4px; background:var(--pale); border-radius:8px; line-height:1.3; }
+.slot-cell { min-height:48px; border-radius:8px; padding:4px; font-size:.58rem; background:#f5f7fc; display:flex; flex-direction:column; gap:2px; overflow:visible; height:auto; }
+.slot-cell.weekend-sun { background:#fff5f5; }
+.slot-cell.weekend-sat { background:#f5f0ff; }
+.person-badge { display:block; border-radius:4px; padding:2px 4px; font-size:.52rem; font-weight:700; line-height:1.4; white-space:normal; word-break:break-all; width:100%; }
+
+.stats-section { background:white; border-radius:16px; padding:14px; margin-bottom:16px; box-shadow:0 2px 10px rgba(26,58,107,.08); }
+.stats-title { font-size:.9rem; font-weight:900; color:var(--navy); margin-bottom:10px; }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; }
+.stat-card { border-radius:10px; padding:10px; display:flex; align-items:center; gap:8px; }
+.stat-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:900; flex-shrink:0; color:white; }
+.stat-name { font-size:.75rem; font-weight:700; }
+.stat-count { font-size:.65rem; color:var(--muted); }
+
+.loading { text-align:center; padding:40px; color:var(--muted); font-size:.9rem; }
+.app-footer { text-align:center; font-size:.72rem; color:var(--muted); margin-top:8px; padding-bottom:20px; }
+.status-msg { text-align:center; padding:12px; border-radius:10px; font-size:.8rem; margin-bottom:12px; }
+.status-msg.info { background:var(--pale); color:var(--navy); }
+.status-msg.warn { background:#fff8e0; color:#8a6c00; }
+.status-msg.error { background:#fde8e8; color:#c0392b; }
+
+/* 閲覧専用バナー */
+.view-only-banner {
+  background: linear-gradient(135deg, #f0f4fb, #e8f0fb);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: .78rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>🏀 バスケ部 8月 <span>当番表</span></h1>
+  <div class="subtitle">西武文理バスケ合宿サポーター 2026年8月</div>
+</div>
+
+<div class="view-only-banner">👁️ 閲覧専用です　※編集は本部役員にお問い合わせください</div>
+
+<div class="event-selector">
+  <label>📋 イベントを選択</label>
+  <select id="eventSelect"><option value="">読み込み中...</option></select>
+  <button class="reload-btn" onclick="reloadData()">🔄 最新データを取得</button>
+</div>
+
+<div id="statusMsg"></div>
+<div id="calendarArea"><div class="loading">データを読み込み中...</div></div>
+<div id="statsArea"></div>
+
+<div class="app-footer">🏀 バスケ部 当番表 2026</div>
+
+<script>
+const WEEK2 = [
+  {date:'8/9',  label:'8/9(日)',  dow:'sun'},
+  {date:'8/10', label:'8/10(月)', dow:'week'},
+  {date:'8/11', label:'8/11(火)', dow:'week'},
+  {date:'8/12', label:'8/12(水)', dow:'week'},
+  {date:'8/13', label:'8/13(木)', dow:'week'},
+  {date:'8/14', label:'8/14(金)', dow:'week'},
+  {date:'8/15', label:'8/15(土)', dow:'sat'},
+];
+const WEEK3 = [
+  {date:'8/16', label:'8/16(日)', dow:'sun'},
+  {date:'8/17', label:'8/17(月)', dow:'week'},
+  {date:'8/18', label:'8/18(火)', dow:'week'},
+  {date:'8/19', label:'8/19(水)', dow:'week'},
+  {date:'8/20', label:'8/20(木)', dow:'week'},
+  {date:'8/21', label:'8/21(金)', dow:'week'},
+  {date:'8/22', label:'8/22(土)', dow:'sat'},
+];
+const SLOTS = [
+  {key:'1事前準備',               label:'①事前準備'},
+  {key:'2本部 8:30〜11:00',      label:'②本部\n8:30〜11:00'},
+  {key:'3本部 11:00〜13:30',     label:'③本部\n11:00〜13:30'},
+  {key:'4本部 13:30〜16:00',     label:'④本部\n13:30〜16:00'},
+  {key:'5本部 16:00〜18:30',     label:'⑤本部\n16:00〜18:30'},
+  {key:'6本部 終日 8:30〜18:30', label:'⑥本部(終日)\n8:30〜18:30'},
+  {key:'7食堂 10:00〜15:00',     label:'⑦食堂\n10:00〜15:00'},
+  {key:'8弁当配達 10:30〜',      label:'⑧弁当配達\n10:30〜'},
+];
+
+const C_FATHER = {bg:'#dbeafe', text:'#1e3a8a', dot:'#3b82f6'};
+const C_MOTHER = {bg:'#fde8f0', text:'#9d174d', dot:'#ec4899'};
+const C_OTHER  = {bg:'#f3f4f6', text:'#374151', dot:'#9ca3af'};
+
+function colorOf(parent) {
+  if (parent === '父') return C_FATHER;
+  if (parent === '母') return C_MOTHER;
+  return C_OTHER;
+}
+
+let currentRecords = [];
+
+async function fetchEvents() {
+  try { const r = await fetch('/api/seibu/events'); return r.ok ? await r.json() : null; }
+  catch(e) { return null; }
+}
+async function fetchEventRecords(id) {
+  try { const r = await fetch('/api/seibu/events/' + id); if(!r.ok) return null; const d = await r.json(); return d.records || []; }
+  catch(e) { return null; }
+}
+
+async function init() {
+  showStatus('イベント一覧を取得中...','info');
+  const events = await fetchEvents();
+  const sel = document.getElementById('eventSelect');
+  if (!events || typeof events !== 'object') {
+    sel.innerHTML = '<option value="">取得失敗</option>';
+    showStatus('❌ 取得できませんでした','error');
+    renderCalendar([]);
+    return;
+  }
+  const list = (Array.isArray(events) ? events : Object.values(events))
+    .sort((a,b) => (b.id||'').localeCompare(a.id||''));
+  if (!list.length) {
+    sel.innerHTML = '<option value="">イベントなし</option>';
+    renderCalendar([]);
+    return;
+  }
+  sel.innerHTML = list.map(e =>
+    '<option value="' + e.id + '">' + (e.title||e.id) + (e.date?' ('+e.date+')':'') + '</option>'
+  ).join('');
+  clearStatus();
+  await loadEvent(list[0].id);
+  sel.addEventListener('change', () => { if(sel.value) loadEvent(sel.value); });
+}
+
+async function loadEvent(id) {
+  showStatus('登録データを取得中...','info');
+  const records = await fetchEventRecords(id);
+  if (!records) { showStatus('❌ データ取得失敗','error'); renderCalendar([]); return; }
+  clearStatus();
+  currentRecords = records;
+  renderCalendar(records);
+  renderStats(records);
+}
+
+async function reloadData() {
+  const sel = document.getElementById('eventSelect');
+  if (sel.value) await loadEvent(sel.value);
+  else await init();
+}
+
+function getPeople(records, date, slotKey) {
+  const people = [];
+  records.forEach(r => {
+    const name = r.studentName || r.name || '不明';
+    const parent = r.parent || '';
+    (r.dates||[]).forEach(d => {
+      if (d.date === date && d.time === slotKey) people.push({name, parent});
+    });
+  });
+  return people;
+}
+
+function renderWeek(weeks, title, records) {
+  let h = '<div class="cal-section"><div class="cal-section-title">📅 ' + title + '</div>';
+  h += '<div class="day-header-row"><div></div>';
+  weeks.forEach(d => { h += '<div class="day-header ' + d.dow + '">' + d.label + '</div>'; });
+  h += '</div>';
+  SLOTS.forEach(slot => {
+    h += '<div class="slot-row"><div class="slot-label">' + slot.label.replace('\n','<br>') + '</div>';
+    weeks.forEach(d => {
+      const people = getPeople(records, d.date, slot.key);
+      const cls = d.dow==='sun'?'weekend-sun':d.dow==='sat'?'weekend-sat':'';
+      h += '<div class="slot-cell ' + cls + '">';
+      people.forEach(p => {
+        const c = colorOf(p.parent);
+        h += '<span class="person-badge" style="background:' + c.bg + ';color:' + c.text + '">' + p.name + '<br><span style="font-size:.5rem;opacity:.8">' + (p.parent||'?') + '</span></span>';
+      });
+      h += '</div>';
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function renderCalendar(records) {
+  let h = '<div class="legend">';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:' + C_FATHER.dot + '"></div>父</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:' + C_MOTHER.dot + '"></div>母</div>';
+  h += '</div>';
+  h += renderWeek(WEEK2, '8/9週（8/9〜8/15）', records);
+  h += renderWeek(WEEK3, '8/16週（8/16〜8/22）', records);
+  document.getElementById('calendarArea').innerHTML = h;
+}
+
+function renderStats(records) {
+  if (!records.length) { document.getElementById('statsArea').innerHTML = ''; return; }
+  const counts = {};
+  records.forEach(r => {
+    const name = r.studentName || r.name || '不明';
+    const parent = r.parent || '';
+    const key = name + '___' + parent;
+    if (!counts[key]) counts[key] = {name, parent, cnt:0};
+    counts[key].cnt += (r.dates||[]).length;
+  });
+  let h = '<div class="stats-section"><div class="stats-title">👥 担当者一覧</div><div class="stats-grid">';
+  Object.values(counts).sort((a,b)=>b.cnt-a.cnt).forEach(info => {
+    const c = colorOf(info.parent);
+    h += '<div class="stat-card" style="background:' + c.bg + '">';
+    h += '<div class="stat-avatar" style="background:' + c.dot + '">' + info.name.charAt(0) + '</div>';
+    h += '<div><div class="stat-name" style="color:' + c.text + '">' + info.name + '（' + (info.parent||'?') + '）</div>';
+    h += '<div class="stat-count">' + info.cnt + ' コマ担当</div></div></div>';
+  });
+  h += '</div></div>';
+  document.getElementById('statsArea').innerHTML = h;
+}
+
+function showStatus(msg, type) {
+  document.getElementById('statusMsg').innerHTML = '<div class="status-msg ' + type + '">' + msg + '</div>';
+}
+function clearStatus() { document.getElementById('statusMsg').innerHTML = ''; }
+
+window.addEventListener('DOMContentLoaded', () => {
+  init();
+  setInterval(async () => {
+    const sel = document.getElementById('eventSelect');
+    if (sel && sel.value) await loadEvent(sel.value);
+  }, 30000);
+});
+</script>
+</body>
+</html>

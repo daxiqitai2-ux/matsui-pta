@@ -323,7 +323,7 @@ function openModal(date, slotKey) {
   const label = slot ? slot.label.replace('\n',' ') : slotKey;
   document.getElementById('modalTitle').textContent = '✏️ ' + date + ' ' + label;
   renderModalList();
-  document.getElementById('editModal').classList.add('show');
+  document.getElementById('editModal').style.display = 'flex';
   document.getElementById('modalInput').value = '';
   document.getElementById('modalInput').focus();
 }
@@ -398,8 +398,9 @@ function deleteManual(idx) {
 }
 
 function closeModal() {
-  document.getElementById('editModal').classList.remove('show');
+  document.getElementById('editModal').style.display = 'none';
 }
+window.closeModal = closeModal;
 document.getElementById('editModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });

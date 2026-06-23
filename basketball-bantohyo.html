@@ -65,7 +65,10 @@ body { font-family:'Zen Maru Gothic',sans-serif; background:linear-gradient(135d
 .modal-title { font-size:.95rem; font-weight:900; color:var(--navy); margin-bottom:14px; }
 .modal-list { margin-bottom:14px; min-height:20px; }
 .modal-person { display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:8px; margin-bottom:6px; font-size:.82rem; font-weight:700; }
-.modal-del { background:none; border:none; color:#e53e3e; font-size:1.1rem; cursor:pointer; padding:0 6px; line-height:1; }
+.modal-person { cursor:pointer; }
+.modal-person:hover { opacity:.75; }
+.modal-del { display:none; }
+.modal-person-hint { font-size:.65rem; color:var(--muted); margin-left:6px; }
 .modal-add-row { display:flex; gap:6px; margin-bottom:12px; align-items:center; }
 .modal-add-row input { flex:1; padding:9px 10px; border:1.5px solid var(--border); border-radius:8px; font-family:'Zen Maru Gothic',sans-serif; font-size:.85rem; outline:none; }
 .modal-add-row select { padding:9px 6px; border:1.5px solid var(--border); border-radius:8px; font-family:'Zen Maru Gothic',sans-serif; font-size:.85rem; background:var(--pale); outline:none; }
@@ -323,22 +326,23 @@ function renderModalList() {
   let h='';
   apiPeople.forEach((p,i)=>{
     const c=colorOf(p.parent);
-    h+='<div class="modal-person" style="background:'+c.bg+';color:'+c.text+'">';
+    h+='<div class="modal-person" style="background:'+c.bg+';color:'+c.text+'" data-type="api" data-idx="'+i+'">';
     h+='<span>'+p.name+'（'+(p.parent||'?')+'）</span>';
-    h+='<button class="modal-del" data-type="api" data-idx="'+i+'">✕</button></div>';
+    h+='<span class="modal-person-hint">タップで削除</span></div>';
   });
   manualPeople.forEach((p,i)=>{
     const c=colorOf(p.parent);
-    h+='<div class="modal-person" style="background:'+c.bg+';color:'+c.text+'">';
+    h+='<div class="modal-person" style="background:'+c.bg+';color:'+c.text+'" data-type="manual" data-idx="'+i+'">';
     h+='<span>'+p.name+'（'+p.parent+'）</span>';
-    h+='<button class="modal-del" data-type="manual" data-idx="'+i+'">✕</button></div>';
+    h+='<span class="modal-person-hint">タップで削除</span></div>';
   });
   if(!h) h='<div style="color:var(--muted);font-size:.8rem;padding:4px">まだ登録なし</div>';
   document.getElementById('modalList').innerHTML=h;
 
-  // 削除ボタンにイベントリスナー設定
-  document.querySelectorAll('.modal-del').forEach(btn=>{
+  // 名前クリックで削除
+  document.querySelectorAll('.modal-person').forEach(btn=>{
     btn.addEventListener('click', function(){
+      if(!confirm('削除しますか？')) return;
       const type = this.getAttribute('data-type');
       const idx = parseInt(this.getAttribute('data-idx'));
       const slot = SLOTS[modalSlotIdx];

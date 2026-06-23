@@ -133,11 +133,17 @@ function colorOf(parent) {
 }
 
 let currentRecords = [];
+let manualData = {};
+let currentEventId = '';
 
 async function fetchEvents() {
   try { const r = await fetch('/api/seibu/events'); return r.ok ? await r.json() : null; }
   catch(e) { return null; }
 }
+async function fetchManualData(id) {
+  try { const r=await fetch('/api/seibu/manual/'+id); return r.ok?await r.json():{}; } catch(e){return {};}
+}
+
 async function fetchEventRecords(id) {
   try { const r = await fetch('/api/seibu/events/' + id); if(!r.ok) return null; const d = await r.json(); return d.records || []; }
   catch(e) { return null; }
@@ -170,10 +176,15 @@ async function init() {
 
 async function loadEvent(id) {
   showStatus('登録データを取得中...','info');
-  const records = await fetchEventRecords(id);
+  const [records, manual] = await Promise.all([
+    fetchEventRecords(id),
+    fetchManualData(id),
+  ]);
   if (!records) { showStatus('❌ データ取得失敗','error'); renderCalendar([]); return; }
   clearStatus();
   currentRecords = records;
+  manualData = manual || {};
+  currentEventId = id;
   renderCalendar(records);
   renderStats(records);
 }
@@ -193,6 +204,8 @@ function getPeople(records, date, slotKey) {
       if (d.date === date && d.time === slotKey) people.push({name, parent});
     });
   });
+  const mkey = date+'|||'+slotKey;
+  (manualData[mkey]||[]).forEach(m=>people.push(m));
   return people;
 }
 

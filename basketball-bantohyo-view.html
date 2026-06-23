@@ -154,10 +154,7 @@ const GRADE_BG = {
   '3年': {bg:'#fecaca', border:'#f87171'},
 };
 function gradeBg(grade) {
-  for (const key of Object.keys(GRADE_BG)) {
-    if ((grade||'').includes(key.replace('年',''))) return GRADE_BG[key];
-  }
-  return {bg:'#f3f4f6', border:'#d1d5db'};
+  return GRADE_BG[grade] || {bg:'#f3f4f6', border:'#d1d5db'};
 }
 function colorOf(p){ return p==='父'?CF:p==='母'?CM:CO; }
 

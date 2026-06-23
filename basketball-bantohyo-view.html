@@ -182,6 +182,10 @@ async function loadEvent(id) {
   ]);
   if (!records) { showStatus('❌ データ取得失敗','error'); renderCalendar([]); return; }
   clearStatus();
+  // datesを日付順にソート
+  records.forEach(r => {
+    if (r.dates) r.dates.sort((a,b) => (a.rawDate||a.date) < (b.rawDate||b.date) ? -1 : 1);
+  });
   currentRecords = records;
   manualData = manual || {};
   currentEventId = id;

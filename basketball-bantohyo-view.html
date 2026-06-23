@@ -57,6 +57,24 @@ body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(1
 .status-msg.warn { background:#fff8e0; color:#8a6c00; }
 .status-msg.error { background:#fde8e8; color:#c0392b; }
 
+/* 検索ボックス */
+.search-box {
+  background:white; border-radius:16px; padding:12px 16px;
+  margin-bottom:16px; box-shadow:0 2px 10px rgba(26,58,107,.08);
+  display:flex; align-items:center; gap:8px;
+}
+.search-box input {
+  flex:1; padding:9px 12px; border:1.5px solid var(--border);
+  border-radius:10px; font-family:'Zen Maru Gothic',sans-serif;
+  font-size:.85rem; outline:none;
+}
+.search-box input:focus { border-color:var(--sky); }
+.search-clear { background:none; border:none; font-size:1.1rem; cursor:pointer; color:var(--muted); padding:0 4px; }
+.slot-cell { transition: opacity .2s; }
+.slot-cell.dimmed { opacity:.2; }
+.slot-cell.highlighted { outline:3px solid #f59e0b; outline-offset:1px; }
+.person-badge.matched::before { content:'★ '; font-size:.6rem; }
+
 /* 閲覧専用バナー */
 .view-only-banner {
   background: linear-gradient(135deg, #f0f4fb, #e8f0fb);
@@ -86,6 +104,10 @@ body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(1
   <button class="reload-btn" onclick="reloadData()">🔄 最新データを取得</button>
 </div>
 
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="🔍 名前で検索（例：山田）" />
+  <button class="search-clear" id="searchClear">✕</button>
+</div>
 <div id="statusMsg"></div>
 <div id="calendarArea"><div class="loading">データを読み込み中...</div></div>
 <div id="statsArea"></div>
@@ -264,6 +286,10 @@ function renderCalendar(records) {
   h += renderWeek(WEEK2, '8/9週（8/9〜8/15）', records);
   h += renderWeek(WEEK3, '8/16週（8/16〜8/22）', records);
   document.getElementById('calendarArea').innerHTML = h;
+  // 検索が入力中なら再適用
+  if (document.getElementById('searchInput') && document.getElementById('searchInput').value.trim()) {
+    setTimeout(applySearch, 0);
+  }
 }
 
 function renderStats(records) {
@@ -298,6 +324,52 @@ function showStatus(msg, type) {
 function clearStatus() { document.getElementById('statusMsg').innerHTML = ''; }
 
 window.addEventListener('DOMContentLoaded', () => {
+  // 検索機能
+  const searchInput = document.getElementById('searchInput');
+  const searchClear = document.getElementById('searchClear');
+
+  function applySearch() {
+    const q = searchInput.value.trim();
+    const cells = document.querySelectorAll('.slot-cell');
+    if (!q) {
+      cells.forEach(cell => {
+        cell.classList.remove('dimmed','highlighted');
+        cell.querySelectorAll('.person-badge').forEach(b=>b.classList.remove('matched'));
+      });
+      searchClear.style.display = 'none';
+      return;
+    }
+    searchClear.style.display = '';
+    let found = false;
+    cells.forEach(cell => {
+      const badges = cell.querySelectorAll('.person-badge');
+      let hit = false;
+      badges.forEach(b => {
+        if (b.textContent.includes(q)) {
+          b.classList.add('matched');
+          hit = true;
+          found = true;
+        } else {
+          b.classList.remove('matched');
+        }
+      });
+      if (hit) {
+        cell.classList.add('highlighted');
+        cell.classList.remove('dimmed');
+      } else {
+        cell.classList.add('dimmed');
+        cell.classList.remove('highlighted');
+      }
+    });
+  }
+
+  searchInput.addEventListener('input', applySearch);
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    applySearch();
+  });
+  searchClear.style.display = 'none';
+
   init();
   setInterval(async () => {
     const sel = document.getElementById('eventSelect');

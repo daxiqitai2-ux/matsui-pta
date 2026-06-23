@@ -370,7 +370,8 @@ function addManual() {
   renderModalList();
   renderCalendar(currentRecords);
   renderStats(currentRecords);
-  saveManualData();
+  saveManualData(); // 非同期保存（描画は先に完了）
+  console.log('追加後manualData:', JSON.stringify(manualData));
 }
 
 function closeModal() {

@@ -134,6 +134,7 @@ function colorOf(parent) {
 
 let currentRecords = [];
 let manualData = {};
+let deletedKeys = [];
 let currentEventId = '';
 
 async function fetchEvents() {
@@ -141,7 +142,14 @@ async function fetchEvents() {
   catch(e) { return null; }
 }
 async function fetchManualData(id) {
-  try { const r=await fetch('/api/seibu/manual/'+id); return r.ok?await r.json():{}; } catch(e){return {};}
+  try {
+    const r = await fetch('/api/seibu/manual/'+id);
+    if (!r.ok) return {};
+    const data = await r.json();
+    deletedKeys = data.__deleted || [];
+    delete data.__deleted;
+    return data;
+  } catch(e){ return {}; }
 }
 
 async function fetchEventRecords(id) {
@@ -205,7 +213,10 @@ function getPeople(records, date, slotKey) {
     const name = r.studentName || r.name || '不明';
     const parent = r.parent || '';
     (r.dates||[]).forEach(d => {
-      if (d.date === date && d.time === slotKey) people.push({name, parent});
+      if (d.date === date && d.time === slotKey) {
+        const dkey = date+'|||'+slotKey+'|||'+name+'|||'+parent;
+        if (!deletedKeys.includes(dkey)) people.push({name, parent});
+      }
     });
   });
   const mkey = date+'|||'+slotKey;

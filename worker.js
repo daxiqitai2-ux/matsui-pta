@@ -209,6 +209,23 @@ async function handleAPI(request, env, url) {
       return new Response(JSON.stringify({ ok: true }), { headers });
     }
 
+    // GET /api/seibu/manual/:eventId - 手動入力データ取得
+    if (url.pathname.match(new RegExp(`^${basePath}/manual/[^/]+$`)) && request.method === 'GET' && isSeibu) {
+      const eventId = url.pathname.split('/').pop();
+      const manualKey = 'seibu_manual_' + eventId;
+      const data = await env.HAIYO_KV.get(manualKey, 'json') || {};
+      return new Response(JSON.stringify(data), { headers });
+    }
+
+    // POST /api/seibu/manual/:eventId - 手動入力データ保存
+    if (url.pathname.match(new RegExp(`^${basePath}/manual/[^/]+$`)) && request.method === 'POST' && isSeibu) {
+      const eventId = url.pathname.split('/').pop();
+      const manualKey = 'seibu_manual_' + eventId;
+      const body = await request.json();
+      await env.HAIYO_KV.put(manualKey, JSON.stringify(body));
+      return new Response(JSON.stringify({ ok: true }), { headers });
+    }
+
     return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });

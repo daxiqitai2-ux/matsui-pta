@@ -145,6 +145,7 @@ function colorOf(p){ return p==='父'?CF:p==='母'?CM:CO; }
 
 let currentRecords = [];
 let manualData = {};
+let currentEventId = '';
 let modalDate = '';
 let modalSlotIdx = 0;
 
@@ -152,6 +153,10 @@ let modalSlotIdx = 0;
 async function fetchEvents() {
   try { const r=await fetch('/api/seibu/events'); return r.ok?await r.json():null; } catch(e){return null;}
 }
+async function fetchManualData(id) {
+  try { const r=await fetch('/api/seibu/manual/'+id); return r.ok?await r.json():{}; } catch(e){return {};}
+}
+
 async function fetchEventRecords(id) {
   try { const r=await fetch('/api/seibu/events/'+id); if(!r.ok)return null; const d=await r.json(); return d.records||[]; } catch(e){return null;}
 }
@@ -171,10 +176,15 @@ async function init() {
 
 async function loadEvent(id) {
   showStatus('データ取得中...','info');
-  const records = await fetchEventRecords(id);
+  const [records, manual] = await Promise.all([
+    fetchEventRecords(id),
+    fetchManualData(id),
+  ]);
   if (!records) { showStatus('❌ データ取得失敗','error'); renderCalendar([]); return; }
   clearStatus();
   currentRecords = records;
+  manualData = manual || {};
+  currentEventId = id;
   renderCalendar(records);
   renderStats(records);
 }
@@ -317,6 +327,7 @@ function renderModalList() {
       const mkey = modalDate+'|||'+slot.key;
       if(type==='manual'){
         manualData[mkey].splice(idx,1);
+        saveManualData();
       } else {
         // APIデータからこのスロットのエントリを削除
         let count=0;
@@ -337,6 +348,17 @@ function renderModalList() {
   });
 }
 
+async function saveManualData() {
+  if (!currentEventId) return;
+  try {
+    await fetch('/api/seibu/manual/'+currentEventId, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(manualData),
+    });
+  } catch(e) { console.error('保存失敗',e); }
+}
+
 function addManual() {
   const name = document.getElementById('modalInput').value.trim();
   const parent = document.getElementById('modalParent').value;
@@ -348,6 +370,7 @@ function addManual() {
   renderModalList();
   renderCalendar(currentRecords);
   renderStats(currentRecords);
+  saveManualData();
 }
 
 function closeModal() {

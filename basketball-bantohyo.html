@@ -294,7 +294,7 @@ function renderStats(records) {
   });
   if(!Object.keys(counts).length){document.getElementById('statsArea').innerHTML='';return;}
   let h='<div class="stats-section"><div class="stats-title">👥 担当者一覧</div><div class="stats-grid">';
-  Object.values(counts).sort((a,b)=>b.cnt-a.cnt).forEach(info=>{
+  Object.values(counts).filter(info=>info.cnt>0).sort((a,b)=>b.cnt-a.cnt).forEach(info=>{
     const c=colorOf(info.parent);
     h+='<div class="stat-card" style="background:'+c.bg+'">';
     h+='<div class="stat-avatar" style="background:'+c.dot+'">'+info.name.charAt(0)+'</div>';

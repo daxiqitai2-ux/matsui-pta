@@ -122,15 +122,22 @@ const SLOTS = [
   {key:'8弁当配達 10:30〜',      label:'⑧弁当配達\n10:30〜'},
 ];
 
-const C_FATHER = {bg:'#dbeafe', text:'#1e3a8a', dot:'#3b82f6'};
-const C_MOTHER = {bg:'#fde8f0', text:'#9d174d', dot:'#ec4899'};
-const C_OTHER  = {bg:'#f3f4f6', text:'#374151', dot:'#9ca3af'};
+const CF = {text:'#1e3a8a', dot:'#3b82f6'};
+const CM = {text:'#9d174d', dot:'#ec4899'};
+const CO = {text:'#374151', dot:'#9ca3af'};
 
-function colorOf(parent) {
-  if (parent === '父') return C_FATHER;
-  if (parent === '母') return C_MOTHER;
-  return C_OTHER;
+const GRADE_BG = {
+  '1年': {bg:'#bfefff', border:'#5bc8f5'},
+  '2年': {bg:'#ede9fe', border:'#a78bfa'},
+  '3年': {bg:'#fecaca', border:'#f87171'},
+};
+function gradeBg(grade) {
+  for (const key of Object.keys(GRADE_BG)) {
+    if ((grade||'').includes(key.replace('年',''))) return GRADE_BG[key];
+  }
+  return {bg:'#f3f4f6', border:'#d1d5db'};
 }
+function colorOf(p){ return p==='父'?CF:p==='母'?CM:CO; }
 
 let currentRecords = [];
 let manualData = {};
@@ -215,7 +222,7 @@ function getPeople(records, date, slotKey) {
     (r.dates||[]).forEach(d => {
       if (d.date === date && d.time === slotKey) {
         const dkey = date+'|||'+slotKey+'|||'+name+'|||'+parent;
-        if (!deletedKeys.includes(dkey)) people.push({name, parent});
+        if (!deletedKeys.includes(dkey)) people.push({name, parent, grade:r.grade||''});
       }
     });
   });
@@ -237,7 +244,7 @@ function renderWeek(weeks, title, records) {
       h += '<div class="slot-cell ' + cls + '">';
       people.forEach(p => {
         const c = colorOf(p.parent);
-        h += '<span class="person-badge" style="background:' + c.bg + ';color:' + c.text + '">' + p.name + '<br><span style="font-size:.5rem;opacity:.8">' + (p.parent||'?') + '</span></span>';
+        const gb=gradeBg(p.grade||''); h += '<span class="person-badge" style="background:'+gb.bg+';color:'+colorOf(p.parent).text+';border:1.5px solid '+gb.border+'">'+p.name+'<br><span style="font-size:.5rem;opacity:.8">'+(p.parent||'?')+'</span></span>';
       });
       h += '</div>';
     });
@@ -249,8 +256,10 @@ function renderWeek(weeks, title, records) {
 
 function renderCalendar(records) {
   let h = '<div class="legend">';
-  h += '<div class="legend-item"><div class="legend-dot" style="background:' + C_FATHER.dot + '"></div>父</div>';
-  h += '<div class="legend-item"><div class="legend-dot" style="background:' + C_MOTHER.dot + '"></div>母</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:#bfefff;border:1.5px solid #5bc8f5"></div>1年</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border:1.5px solid #a78bfa"></div>2年</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:#fecaca;border:1.5px solid #f87171"></div>3年</div>';
+  h += '<div class="legend-item" style="font-size:.65rem"><span style="color:#1e3a8a;font-weight:700">文字色：父</span>　<span style="color:#9d174d;font-weight:700">母</span></div>';
   h += '</div>';
   h += renderWeek(WEEK2, '8/9週（8/9〜8/15）', records);
   h += renderWeek(WEEK3, '8/16週（8/16〜8/22）', records);

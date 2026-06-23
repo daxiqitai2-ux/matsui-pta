@@ -221,10 +221,11 @@ function getPeople(date, slotKey) {
   currentRecords.forEach(r => {
     const name = r.studentName||r.name||'不明';
     const parent = r.parent||'';
+    const grade = r.grade||'';
     (r.dates||[]).forEach(d => {
       if(d.date===date&&d.time===slotKey) {
         const dkey = date+'|||'+slotKey+'|||'+name+'|||'+parent;
-        if(!deletedKeys.includes(dkey)) people.push({name,parent,manual:false});
+        if(!deletedKeys.includes(dkey)) people.push({name,parent,grade,manual:false});
       }
     });
   });

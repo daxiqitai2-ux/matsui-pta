@@ -265,7 +265,11 @@ function renderStats(records) {
     const parent = r.parent || '';
     const key = name + '___' + parent;
     if (!counts[key]) counts[key] = {name, parent, cnt:0};
-    counts[key].cnt += (r.dates||[]).length;
+    const activeDates=(r.dates||[]).filter(d=>{
+      const dkey=d.date+'|||'+d.time+'|||'+name+'|||'+parent;
+      return !deletedKeys.includes(dkey);
+    });
+    counts[key].cnt += activeDates.length;
   });
   let h = '<div class="stats-section"><div class="stats-title">👥 担当者一覧</div><div class="stats-grid">';
   Object.values(counts).sort((a,b)=>b.cnt-a.cnt).forEach(info => {

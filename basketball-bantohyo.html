@@ -105,7 +105,7 @@ body { font-family:'Zen Maru Gothic',sans-serif; background:linear-gradient(135d
         <option value="父">父</option>
         <option value="母">母</option>
       </select>
-      <button class="modal-add-btn" id="modalAddBtn">追加</button>
+      <button class="modal-add-btn" id="modalAddBtn">登録</button>
     </div>
     <button class="modal-close-btn" id="modalCloseBtn">閉じる</button>
   </div>
@@ -395,11 +395,10 @@ function addManual() {
   if(!manualData[mkey]) manualData[mkey]=[];
   manualData[mkey].push({name,parent});
   document.getElementById('modalInput').value='';
-  renderModalList();
   renderCalendar(currentRecords);
   renderStats(currentRecords);
-  saveManualData(); // 非同期保存（描画は先に完了）
-  console.log('追加後manualData:', JSON.stringify(manualData));
+  saveManualData();
+  closeModal();
 }
 
 function closeModal() {

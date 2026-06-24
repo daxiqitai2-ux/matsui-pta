@@ -217,6 +217,16 @@ async function handleAPI(request, env, url) {
       return new Response(JSON.stringify(data), { headers });
     }
 
+    // DELETE /api/seibu/manual/:eventId/deleted - 削除リストをリセット
+    if (url.pathname.match(new RegExp(`^${basePath}/manual/[^/]+/deleted$`)) && request.method === 'GET' && isSeibu) {
+      const eventId = url.pathname.split('/').slice(-2)[0];
+      const manualKey = 'seibu_manual_' + eventId;
+      const data = await env.HAIYO_KV.get(manualKey, 'json') || {};
+      data.__deleted = [];
+      await env.HAIYO_KV.put(manualKey, JSON.stringify(data));
+      return new Response(JSON.stringify({ ok: true, message: '削除リストをリセットしました' }), { headers });
+    }
+
     // POST /api/seibu/manual/:eventId - 手動入力データ保存
     if (url.pathname.match(new RegExp(`^${basePath}/manual/[^/]+$`)) && request.method === 'POST' && isSeibu) {
       const eventId = url.pathname.split('/').pop();

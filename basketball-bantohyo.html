@@ -198,10 +198,16 @@ async function init() {
 
 async function loadEvent(id) {
   showStatus('データ取得中...','info');
-  const [records, manual] = await Promise.all([
-    fetchEventRecords(id),
-    fetchManualData(id),
-  ]);
+  let records, manual;
+  try {
+    [records, manual] = await Promise.all([
+      fetchEventRecords(id),
+      fetchManualData(id),
+    ]);
+  } catch(e) {
+    records = await fetchEventRecords(id);
+    manual = {};
+  }
   if (!records) { showStatus('❌ データ取得失敗','error'); renderCalendar([]); return; }
   clearStatus();
   // datesを日付順にソート

@@ -367,7 +367,9 @@ function renderModalList() {
   // 名前クリックで削除
   document.querySelectorAll('.modal-person').forEach(btn=>{
     btn.addEventListener('click', function(){
-      if(!confirm('削除しますか？')) return;
+      const type2 = this.getAttribute('data-type');
+      const pname = this.querySelector('span').textContent;
+      if(!confirm(pname + 'を削除します。\n復活させることはできません。\nよろしいですか？')) return;
       const type = this.getAttribute('data-type');
       const idx = parseInt(this.getAttribute('data-idx'));
       const slot = SLOTS[modalSlotIdx];

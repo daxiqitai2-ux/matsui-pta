@@ -217,6 +217,7 @@ async function loadEvent(id) {
   currentRecords = records;
   manualData = manual || {};
   currentEventId = id;
+  console.log('records件数:', records.length, 'サンプル:', JSON.stringify(records[0]));
   renderCalendar(records);
   renderStats(records);
 }

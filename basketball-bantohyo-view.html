@@ -170,12 +170,12 @@ async function fetchEvents() {
 async function fetchManualData(id) {
   try {
     const r = await fetch('/api/seibu/manual/'+id);
-    if (!r.ok) return {};
+    if (!r.ok) { deletedKeys = []; return {}; }
     const data = await r.json();
-    deletedKeys = data.__deleted || [];
+    deletedKeys = Array.isArray(data.__deleted) ? data.__deleted : [];
     delete data.__deleted;
     return data;
-  } catch(e){ return {}; }
+  } catch(e){ deletedKeys = []; return {}; }
 }
 
 async function fetchEventRecords(id) {
@@ -229,6 +229,7 @@ async function loadEvent(id) {
   currentRecords = records;
   manualData = manual || {};
   currentEventId = id;
+  console.log('records件数:', records.length, 'サンプル:', JSON.stringify(records[0]));
   renderCalendar(records);
   renderStats(records);
 }

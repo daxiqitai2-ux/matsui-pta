@@ -191,7 +191,7 @@ async function init() {
   if (!events) { sel.innerHTML='<option>取得失敗</option>'; showStatus('❌ 取得失敗','error'); renderCalendar([]); return; }
   const list = (Array.isArray(events)?events:Object.values(events)).sort((a,b)=>(b.id||'').localeCompare(a.id||''));
   if (!list.length) { sel.innerHTML='<option>イベントなし</option>'; renderCalendar([]); return; }
-  sel.innerHTML = list.map(e=>'<option value="'+e.id+'">'+(e.title||e.id)+(e.date?' ('+e.date+')':'')+'</option>').join('');
+  sel.innerHTML = list.map(e=>'<option value="'+e.id+'">'+(e.title||e.id)+'</option>').join('');
   clearStatus();
   await loadEvent(list[0].id);
 }

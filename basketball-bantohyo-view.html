@@ -201,7 +201,7 @@ async function init() {
     return;
   }
   sel.innerHTML = list.map(e =>
-    '<option value="' + e.id + '">' + (e.title||e.id) + (e.date?' ('+e.date+')':'') + '</option>'
+    '<option value="' + e.id + '">' + (e.title||e.id) + '</option>'
   ).join('');
   clearStatus();
   await loadEvent(list[0].id);

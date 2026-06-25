@@ -119,6 +119,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
       <div style="display:flex;gap:6px">
         <button class="btn btn-ghost btn-sm" onclick="loadList()">🔄</button>
         <button class="btn btn-amber btn-sm" onclick="exportCSV()">📥 CSV</button>
+        <button class="btn btn-amber btn-sm" onclick="exportXLSX()" style="background:#1d6f42;color:#fff">📊 Excel</button>
       </div>
     </div>
     <div class="filter-bar" id="filter-bar"></div>
@@ -455,6 +456,66 @@ function exportCSV(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
   a.download='PTA業務日誌.csv';a.click();
+}
+
+async function exportXLSX(){
+  if(!allRecords.length){alert('記録がありません');return;}
+
+  // SheetJSを動的ロード
+  if(!window.XLSX){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload=res;s.onerror=rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  const wb=XLSX.utils.book_new();
+  const headers=['日付','時間','役職','お子さん名','クラス','保護者名','活動内容','気づき'];
+
+  // 全データシート
+  const allRows=[headers,...allRecords.map(r=>[r.date,r.time||'',r.role,r.childName,r.cls,r.parentName,r.work,r.note||''])];
+  const wsAll=XLSX.utils.aoa_to_sheet(allRows);
+  styleSheet(wsAll, allRows.length);
+  XLSX.utils.book_append_sheet(wb, wsAll, '全データ');
+
+  // 役職ごとにシート分け（役職名の最初の部分で分類）
+  const roleMap={};
+  allRecords.forEach(r=>{
+    const key=r.role.split(' / ')[0]; // 「幹事 / 広報」→「幹事」
+    if(!roleMap[key])roleMap[key]=[];
+    roleMap[key].push(r);
+  });
+
+  Object.entries(roleMap).forEach(([role,records])=>{
+    const rows=[headers,...records.map(r=>[r.date,r.time||'',r.role,r.childName,r.cls,r.parentName,r.work,r.note||''])];
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    styleSheet(ws, rows.length);
+    // シート名は31文字以内・特殊文字不可
+    const sheetName=role.slice(0,31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  const today=new Date();
+  const fname=`PTA業務日誌_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+function styleSheet(ws, rowCount){
+  const cols=[{wch:12},{wch:8},{wch:14},{wch:12},{wch:8},{wch:12},{wch:30},{wch:30}];
+  ws['!cols']=cols;
+  // ヘッダー行のスタイル
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let C=range.s.c;C<=range.e.c;C++){
+    const addr=XLSX.utils.encode_cell({r:0,c:C});
+    if(!ws[addr])continue;
+    ws[addr].s={
+      font:{bold:true,color:{rgb:'FFFFFF'}},
+      fill:{fgColor:{rgb:'1B4332'}},
+      alignment:{horizontal:'center'},
+    };
+  }
 }
 
 // 初期表示

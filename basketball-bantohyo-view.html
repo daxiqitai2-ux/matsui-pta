@@ -298,11 +298,14 @@ function renderCalendar(records) {
 function renderStats(records) {
   if (!records.length) { document.getElementById('statsArea').innerHTML = ''; return; }
   const counts = {};
+  const GRADE_ORDER = ['3年','2年','1年'];
   records.forEach(r => {
     const name = r.studentName || r.name || '不明';
     const parent = r.parent || '';
+    const grade = r.grade || '';
+    const number = parseInt(r.number||'0')||0;
     const key = name + '___' + parent;
-    if (!counts[key]) counts[key] = {name, parent, cnt:0};
+    if (!counts[key]) counts[key] = {name, parent, grade, number, cnt:0};
     const activeDates=(r.dates||[]).filter(d=>{
       const dkey=d.date+'|||'+d.time+'|||'+name+'|||'+parent;
       return !deletedKeys.includes(dkey);
@@ -310,7 +313,11 @@ function renderStats(records) {
     counts[key].cnt += activeDates.length;
   });
   let h = '<div class="stats-section"><div class="stats-title">👥 担当者一覧</div><div class="stats-grid">';
-  Object.values(counts).filter(info=>info.cnt>0).sort((a,b)=>b.cnt-a.cnt).forEach(info => {
+  Object.values(counts).filter(info=>info.cnt>0).sort((a,b)=>{
+    const gi = GRADE_ORDER.indexOf(a.grade) - GRADE_ORDER.indexOf(b.grade);
+    if(gi!==0) return gi;
+    return a.number - b.number;
+  }).forEach(info => {
     const c = colorOf(info.parent);
     h += '<div class="stat-card" style="background:' + c.bg + '">';
     h += '<div class="stat-avatar" style="background:' + c.dot + '">' + info.name.charAt(0) + '</div>';

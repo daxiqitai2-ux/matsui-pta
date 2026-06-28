@@ -320,7 +320,7 @@ function renderStats(records) {
   }).forEach(info => {
     const c = colorOf(info.parent);
     h += '<div class="stat-card" style="background:' + c.bg + '">';
-    h += '<div class="stat-avatar" style="background:' + c.dot + '">' + info.name.charAt(0) + '</div>';
+    h += '<div class="stat-avatar" style="background:' + c.dot + ';font-size:.7rem">' + info.number + '</div>';
     h += '<div><div class="stat-name" style="color:' + c.text + '">' + info.name + '（' + (info.parent||'?') + '）</div>';
     h += '<div class="stat-count">' + info.cnt + ' コマ担当</div></div></div>';
   });

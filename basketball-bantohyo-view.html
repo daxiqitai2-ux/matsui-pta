@@ -288,7 +288,6 @@ function renderCalendar(records) {
   h += '<div class="legend-item" style="font-size:.65rem"><span style="color:#1e3a8a;font-weight:700">文字色：父</span>　<span style="color:#9d174d;font-weight:700">母</span></div>';
   h += '</div>';
   h += renderWeek(WEEK2, '8/9週（8/9〜8/15）', records);
-  h += renderWeek(WEEK3, '8/16週（8/16〜8/22）', records);
   document.getElementById('calendarArea').innerHTML = h;
   // 検索が入力中なら再適用
   if (document.getElementById('searchInput') && document.getElementById('searchInput').value.trim()) {

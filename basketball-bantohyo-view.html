@@ -40,6 +40,10 @@ body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(1
 .slot-cell { min-height:48px; border-radius:8px; padding:4px; font-size:.58rem; background:#f5f7fc; display:flex; flex-direction:column; gap:2px; overflow:visible; height:auto; }
 .slot-cell.weekend-sun { background:#fff5f5; }
 .slot-cell.weekend-sat { background:#f5f0ff; }
+.slot-cell.slot-na { align-items:center; justify-content:center; color:#c3c9d4; background:repeating-linear-gradient(45deg,#eef0f4,#eef0f4 6px,#e4e7ee 6px,#e4e7ee 12px); font-weight:700; }
+.slot-cell.slot-warn-empty { background:#fee2e2; border:1.5px solid #f87171; }
+.slot-cell.slot-warn-low { background:#fef3c7; border:1.5px solid #fbbf24; }
+.slot-cell.slot-ok { background:#ecfdf5; border:1.5px solid #34d399; }
 .person-badge { display:block; border-radius:4px; padding:2px 4px; font-size:.52rem; font-weight:700; line-height:1.4; white-space:normal; word-break:break-all; width:100%; }
 
 .stats-section { background:white; border-radius:16px; padding:14px; margin-bottom:16px; box-shadow:0 2px 10px rgba(26,58,107,.08); }
@@ -133,7 +137,7 @@ const WEEK3 = [
   {date:'8/22', label:'8/22(土)', dow:'sat'},
 ];
 const SLOTS = [
-  {key:'1事前準備',               label:'①事前準備'},
+  {key:'1事前準備',               label:'①事前準備',           only:['8/10']},
   {key:'2本部 8:30〜11:00',      label:'②本部\n8:30〜11:00'},
   {key:'3本部 11:00〜13:30',     label:'③本部\n11:00〜13:30'},
   {key:'4本部 13:30〜16:00',     label:'④本部\n13:30〜16:00'},
@@ -141,8 +145,8 @@ const SLOTS = [
   {key:'6本部 終日 8:30〜18:30', label:'⑥本部(終日)\n8:30〜18:30'},
   {key:'7食堂 10:00〜15:00',     label:'⑦食堂\n10:00〜15:00'},
   {key:'8弁当配達 10:30〜',      label:'⑧弁当配達\n10:30〜'},
-  {key:'9布団搬入 8/10or11',     label:'⑨布団搬入\n8/10 or 11'},
-  {key:'10布団搬出 8/15',         label:'⑩布団搬出\n8/15'},
+  {key:'9布団搬入 8/10or11',     label:'⑨布団搬入\n8/10 or 11', only:['8/10','8/11']},
+  {key:'10布団搬出 8/15',         label:'⑩布団搬出\n8/15',       only:['8/15']},
 ];
 
 const CF = {text:'#1e3a8a', dot:'#3b82f6'};
@@ -266,9 +270,15 @@ function renderWeek(weeks, title, records) {
   SLOTS.forEach(slot => {
     h += '<div class="slot-row"><div class="slot-label">' + slot.label.replace('\n','<br>') + '</div>';
     weeks.forEach(d => {
+      const applicable = !slot.only || slot.only.includes(d.date);
+      if(!applicable){
+        h += '<div class="slot-cell slot-na">－</div>';
+        return;
+      }
       const people = getPeople(records, d.date, slot.key);
       const cls = d.dow==='sun'?'weekend-sun':d.dow==='sat'?'weekend-sat':'';
-      h += '<div class="slot-cell ' + cls + '">';
+      const countCls = people.length===0?'slot-warn-empty':(people.length===1?'slot-warn-low':'slot-ok');
+      h += '<div class="slot-cell ' + cls + ' ' + countCls + '">';
       people.forEach(p => {
         const c = colorOf(p.parent);
         const gb=gradeBg(p.grade||''); h += '<span class="person-badge" style="background:'+gb.bg+';color:'+colorOf(p.parent).text+';border:1.5px solid '+gb.border+'">'+p.name+'<br><span style="font-size:.5rem;opacity:.8">'+(p.parent||'?')+'</span></span>';
@@ -287,6 +297,12 @@ function renderCalendar(records) {
   h += '<div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border:1.5px solid #a78bfa"></div>2年</div>';
   h += '<div class="legend-item"><div class="legend-dot" style="background:#fecaca;border:1.5px solid #f87171"></div>3年</div>';
   h += '<div class="legend-item" style="font-size:.65rem"><span style="color:#1e3a8a;font-weight:700">文字色：父</span>　<span style="color:#9d174d;font-weight:700">母</span></div>';
+  h += '</div>';
+  h += '<div class="legend" style="margin-top:-4px">';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border:1.5px solid #f87171"></div>未登録(0人)</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border:1.5px solid #fbbf24"></div>1人のみ</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:#ecfdf5;border:1.5px solid #34d399"></div>2人以上</div>';
+  h += '<div class="legend-item"><div class="legend-dot" style="background:repeating-linear-gradient(45deg,#eef0f4,#eef0f4 3px,#e4e7ee 3px,#e4e7ee 6px)"></div>対象外の日</div>';
   h += '</div>';
   h += renderWeek(WEEK2, '8/10週（8/10〜8/15）', records);
   document.getElementById('calendarArea').innerHTML = h;

@@ -116,7 +116,6 @@ body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(1
 
 <script>
 const WEEK2 = [
-  {date:'8/9',  label:'8/9(日)',  dow:'sun'},
   {date:'8/10', label:'8/10(月)', dow:'week'},
   {date:'8/11', label:'8/11(火)', dow:'week'},
   {date:'8/12', label:'8/12(水)', dow:'week'},
@@ -289,7 +288,7 @@ function renderCalendar(records) {
   h += '<div class="legend-item"><div class="legend-dot" style="background:#fecaca;border:1.5px solid #f87171"></div>3年</div>';
   h += '<div class="legend-item" style="font-size:.65rem"><span style="color:#1e3a8a;font-weight:700">文字色：父</span>　<span style="color:#9d174d;font-weight:700">母</span></div>';
   h += '</div>';
-  h += renderWeek(WEEK2, '8/9週（8/9〜8/15）', records);
+  h += renderWeek(WEEK2, '8/10週（8/10〜8/15）', records);
   document.getElementById('calendarArea').innerHTML = h;
   // 検索が入力中なら再適用
   if (document.getElementById('searchInput') && document.getElementById('searchInput').value.trim()) {

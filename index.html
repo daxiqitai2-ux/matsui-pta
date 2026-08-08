@@ -500,6 +500,29 @@ else{
     $('uqr').onclick=()=>window.open('https://qr.quel.jp/?text='+encodeURIComponent(url),'_blank');
   }
 
+  // ── 役職順ソート（一覧表示・CSV共通） ──────────
+  const ROLE_ORDER=['校長','教頭','教務主任','会長','副会長','監事','会計幹事','幹事','地区委員','学年委員','市子連','まついちまつり'];
+  const TANTO_ORDER=['110番','人権','人権・給食','広報','サポート','箭弓町','松山A','松山B','松葉1','松葉2','松葉3','日吉','材木A','材木B','本町1','本町2'];
+  const CLS_ORDER=['1-1','1-2','2-1','2-2','3-1','3-2','4-1','4-2','5-1','5-2','6-1','6-2','6-3','なかよし'];
+  function roleKey(r){
+    // r.role は「幹事 / 広報」または「校長」などの形式
+    const parts=(r.role||'').split(' / ');
+    const roleName=parts[0].trim();
+    const tantoName=parts[1]?parts[1].trim():'';
+    const ri=ROLE_ORDER.indexOf(roleName);
+    const ti=tantoName?TANTO_ORDER.indexOf(tantoName):-1;
+    const ci=CLS_ORDER.indexOf(r.cls);
+    return [ri<0?99:ri, ti<0?99:ti, ci<0?99:ci];
+  }
+  function sortIdxByRole(records){
+    // [{r, idx}] を役職順にソート。idx は元の records 配列でのインデックス（編集ボタン用）
+    return records.map((r,idx)=>({r,idx})).sort((a,b)=>{
+      const ak=roleKey(a.r),bk=roleKey(b.r);
+      for(let i=0;i<ak.length;i++){if(ak[i]!==bk[i])return ak[i]-bk[i];}
+      return 0;
+    });
+  }
+
   // ── 集計 ──────────────────────────
   async function rAtt(){
     const box=$('t-att');box.innerHTML='';
@@ -550,7 +573,7 @@ else{
     $('acsv').onclick=()=>exportCSV(m);
     const list=$('alist');
     if(!total){list.innerHTML='<p style="color:var(--muted);font-size:.86rem">まだ誰も出席登録していません。</p>';return;}
-    records.forEach((r,idx)=>{
+    sortIdxByRole(records).forEach(({r,idx})=>{
       const row=el('div','att-row att-p');
       const isAbs=r.status==='欠席';
       row.className='att-row '+(isAbs?'att-a':'att-p');
@@ -594,41 +617,35 @@ else{
     const list=$('alist');
     if(list){
       const existing=list.children.length;
-      if(records.length>existing){
-        for(let i=existing;i<records.length;i++){
-          const r=records[i];
-          const row=el('div','att-row att-p');
-          row.innerHTML=`<div><span style="font-weight:700">${r.name}</span>${r.role?`<span style="font-size:.72rem;color:var(--muted);margin-left:6px">${r.role}</span>`:''}<span style="font-size:.72rem;color:var(--muted);margin-left:6px">${r.cls}</span></div><span class="att-time">${r.time||''}</span>`;
+      if(records.length!==existing){
+        // 件数が変わった場合は役職順で全体を再描画（表示順を維持するため）
+        list.innerHTML='';
+        sortIdxByRole(records).forEach(({r,idx})=>{
+          const row=el('div','att-row '+(r.status==='欠席'?'att-a':'att-p'));
+          row.innerHTML=`<div>`+
+            `<span style="font-weight:700">${r.name}</span>`+
+            `${r.role?`<span style="font-size:.72rem;color:var(--muted);margin-left:6px">${r.role}</span>`:''}`+
+            (r.childName?`<span style="font-size:.72rem;color:var(--muted);margin-left:6px">👦 ${r.childName}</span>`:'')+
+            `<span style="font-size:.72rem;color:var(--muted);margin-left:6px">${r.cls}</span>`+
+            `</div>`+
+            `<div style="display:flex;align-items:center;gap:6px">`+
+            `<span style="font-size:.72rem;font-weight:700;color:${r.status==='欠席'?'var(--amber)':'var(--forest)'}">${r.status==='欠席'?'❌ 欠席':'✅ 出席'}</span>`+
+            (r.reason?`<span style="font-size:.7rem;color:var(--muted);margin-left:4px">(${r.reason})</span>`:'')+
+            `<span class="att-time">${r.time||''}</span>`+
+            `<button class="btn btn-ghost btn-sm no-print" style="font-size:.68rem;padding:2px 6px" data-editidx="${idx}">✏️</button>`+
+            `</div>`;
           list.appendChild(row);
-        }
+        });
+        list.querySelectorAll('[data-editidx]').forEach(btn=>{
+          btn.onclick=()=>openEditModal(m,parseInt(btn.dataset.editidx));
+        });
       }
     }
   }
 
   function exportCSV(m){
-    // PDF順：役職の順序
-    const ROLE_ORDER=['校長','教頭','教務主任','会長','副会長','監事','会計幹事','幹事','地区委員','学年委員','市子連','まついちまつり'];
-    // 幹事の担当順序
-    const TANTO_ORDER=['110番','人権','人権・給食','広報','サポート','箭弓町','松山A','松山B','松葉1','松葉2','松葉3','日吉','材木A','材木B','本町1','本町2'];
-    // クラス順序
-    const CLS_ORDER=['1-1','1-2','2-1','2-2','3-1','3-2','4-1','4-2','5-1','5-2','6-1','6-2','6-3','なかよし'];
-
-    function roleKey(r){
-      // r.role は「幹事 / 広報」または「校長」などの形式
-      const parts=(r.role||'').split(' / ');
-      const roleName=parts[0].trim();
-      const tantoName=parts[1]?parts[1].trim():'';
-      const ri=ROLE_ORDER.indexOf(roleName);
-      const ti=tantoName?TANTO_ORDER.indexOf(tantoName):-1;
-      const ci=CLS_ORDER.indexOf(r.cls);
-      return [ri<0?99:ri, ti<0?99:ti, ci<0?99:ci];
-    }
-
-    const sorted=[...(m.records||[])].sort((a,b)=>{
-      const ak=roleKey(a),bk=roleKey(b);
-      for(let i=0;i<ak.length;i++){if(ak[i]!==bk[i])return ak[i]-bk[i];}
-      return 0;
-    });
+    // PDF順・画面表示順と共通の役職順ソートを使用
+    const sorted=sortIdxByRole(m.records||[]).map(x=>x.r);
 
     const rows=[['役職・担当','クラス','お子さんの名前','保護者名','出欠','欠席理由','チェックイン時刻']];
     sorted.forEach(r=>rows.push([r.role||'',r.cls,r.childName||'',r.name,r.status||'出席',r.reason||'',r.time||'']));

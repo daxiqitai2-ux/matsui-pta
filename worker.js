@@ -1,3 +1,132 @@
+// ── Googleスプレッドシート連携 ──
+const PTA_SPREADSHEET_ID = '1MJXsjqti4JpIlVVL6McBfvei7h3oHO1YWARQ6Ga7kcg';
+const PTA_SHEET_RANGE = 'シート1!A:G';
+
+function b64url(bytes) {
+  let str;
+  if (typeof bytes === 'string') {
+    str = btoa(bytes);
+  } else {
+    str = btoa(String.fromCharCode(...new Uint8Array(bytes)));
+  }
+  return str.replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+async function getGoogleAccessToken(env) {
+  const raw = env.GOOGLE_SERVICE_ACCOUNT_KEY.trim();
+  // Base64エンコードされたJSON、または生のJSONどちらにも対応
+  const jsonText = raw.startsWith('{') ? raw : atob(raw);
+  const key = JSON.parse(jsonText);
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: key.client_email,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now,
+  };
+  const unsigned = b64url(JSON.stringify(header)) + '.' + b64url(JSON.stringify(payload));
+
+  const pem = key.private_key
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\s/g, '');
+  const der = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8',
+    der.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    cryptoKey,
+    new TextEncoder().encode(unsigned)
+  );
+  const jwt = unsigned + '.' + b64url(sig);
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error('token error: ' + JSON.stringify(data));
+  return data.access_token;
+}
+
+// PTAチェックイン記録をスプレッドシートに1行追記（ベストエフォート：失敗してもチェックイン自体は成功扱い）
+async function appendPtaRecordToSheet(env, record) {
+  try {
+    if (!env.GOOGLE_SERVICE_ACCOUNT_KEY) return;
+    const token = await getGoogleAccessToken(env);
+    const roleParts = (record.role || '').split(' / ');
+    const roleBase = roleParts[0] || '';
+    const roleDetail = roleParts[1] || '';
+    const row = [
+      record.time || '',
+      record.name || '',
+      roleBase,
+      roleDetail,
+      record.cls || '',
+      record.status || '',
+      record.reason || '',
+    ];
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(PTA_SHEET_RANGE)}:append?valueInputOption=USER_ENTERED`;
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ values: [row] }),
+    });
+  } catch (e) {
+    console.error('スプレッドシート反映失敗:', e.message);
+  }
+}
+
+// 過去分をまとめて一括反映（1回限りのバックフィル用）
+async function backfillPtaRecordsToSheet(env) {
+  if (!env.GOOGLE_SERVICE_ACCOUNT_KEY) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY未設定');
+  const data = await env.HAIYO_KV.get('meetings', 'json') || {};
+  const rows = [];
+  for (const id of Object.keys(data)) {
+    const records = data[id].records || [];
+    for (const record of records) {
+      const roleParts = (record.role || '').split(' / ');
+      rows.push([
+        record.time || '',
+        record.name || '',
+        roleParts[0] || '',
+        roleParts[1] || '',
+        record.cls || '',
+        record.status || '',
+        record.reason || '',
+      ]);
+    }
+  }
+  if (rows.length === 0) return 0;
+  const token = await getGoogleAccessToken(env);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(PTA_SHEET_RANGE)}:append?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ values: rows }),
+  });
+  if (!res.ok) throw new Error('Sheets API error: ' + (await res.text()));
+  return rows.length;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -87,6 +216,19 @@ async function handleAPI(request, env, url) {
 
   if (request.method === 'OPTIONS') return new Response(null, { headers });
 
+  // GET /api/pta/backfill-sheet?key=matsui2026 - 過去分を一括でスプレッドシートに反映（1回限り）
+  if (url.pathname === '/api/pta/backfill-sheet' && request.method === 'GET') {
+    if (url.searchParams.get('key') !== 'matsui2026') {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers });
+    }
+    try {
+      const count = await backfillPtaRecordsToSheet(env);
+      return new Response(JSON.stringify({ ok: true, added: count }), { headers });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
+    }
+  }
+
   const isSupport = url.pathname.startsWith('/api/support/');
   const isSeibu = url.pathname.startsWith('/api/seibu/');
   const KV_KEY = isSeibu ? 'seibu_events' : isSupport ? 'support_meetings' : 'meetings';
@@ -148,6 +290,10 @@ async function handleAPI(request, env, url) {
         }
         try {
           await env.HAIYO_KV.put(KV_KEY, JSON.stringify(data));
+          // 松一小PTA（役職ベース）のチェックインのみスプレッドシートにも反映
+          if (!isSeibu && !isSupport) {
+            await appendPtaRecordToSheet(env, record);
+          }
           return new Response(JSON.stringify({ ok: true, record }), { headers });
         } catch (e) {
           if (i === 2) throw e;

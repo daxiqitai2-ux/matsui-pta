@@ -216,6 +216,14 @@ async function handleAPI(request, env, url) {
 
   if (request.method === 'OPTIONS') return new Response(null, { headers });
 
+  // GET /api/pta/debug-key - シークレットが読めているか確認する一時診断用
+  if (url.pathname === '/api/pta/debug-key' && request.method === 'GET') {
+    const has = !!env.GOOGLE_SERVICE_ACCOUNT_KEY;
+    const len = has ? env.GOOGLE_SERVICE_ACCOUNT_KEY.length : 0;
+    const preview = has ? env.GOOGLE_SERVICE_ACCOUNT_KEY.slice(0, 10) : '';
+    return new Response(JSON.stringify({ hasKey: has, length: len, preview }), { headers });
+  }
+
   // GET /api/pta/backfill-sheet?key=matsui2026 - 過去分を一括でスプレッドシートに反映（1回限り）
   if (url.pathname === '/api/pta/backfill-sheet' && request.method === 'GET') {
     if (url.searchParams.get('key') !== 'matsui2026') {

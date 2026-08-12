@@ -89,6 +89,41 @@ async function appendPtaRecordToSheet(env, record) {
   }
 }
 
+// 過去分をまとめて一括反映（1回限りのバックフィル用）
+async function backfillPtaRecordsToSheet(env) {
+  if (!env.GOOGLE_SERVICE_ACCOUNT_KEY) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY未設定');
+  const data = await env.HAIYO_KV.get('meetings', 'json') || {};
+  const rows = [];
+  for (const id of Object.keys(data)) {
+    const records = data[id].records || [];
+    for (const record of records) {
+      const roleParts = (record.role || '').split(' / ');
+      rows.push([
+        record.time || '',
+        record.name || '',
+        roleParts[0] || '',
+        roleParts[1] || '',
+        record.cls || '',
+        record.status || '',
+        record.reason || '',
+      ]);
+    }
+  }
+  if (rows.length === 0) return 0;
+  const token = await getGoogleAccessToken(env);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(PTA_SHEET_RANGE)}:append?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ values: rows }),
+  });
+  if (!res.ok) throw new Error('Sheets API error: ' + (await res.text()));
+  return rows.length;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -177,6 +212,19 @@ async function handleAPI(request, env, url) {
   };
 
   if (request.method === 'OPTIONS') return new Response(null, { headers });
+
+  // GET /api/pta/backfill-sheet?key=matsui2026 - 過去分を一括でスプレッドシートに反映（1回限り）
+  if (url.pathname === '/api/pta/backfill-sheet' && request.method === 'GET') {
+    if (url.searchParams.get('key') !== 'matsui2026') {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers });
+    }
+    try {
+      const count = await backfillPtaRecordsToSheet(env);
+      return new Response(JSON.stringify({ ok: true, added: count }), { headers });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
+    }
+  }
 
   const isSupport = url.pathname.startsWith('/api/support/');
   const isSeibu = url.pathname.startsWith('/api/seibu/');

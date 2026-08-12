@@ -61,70 +61,110 @@ async function getGoogleAccessToken(env) {
   return data.access_token;
 }
 
-// PTAチェックイン記録をスプレッドシートに1行追記（ベストエフォート：失敗してもチェックイン自体は成功扱い）
-async function appendPtaRecordToSheet(env, record) {
+// タブ名として使えない文字を除去し、100文字以内に収める
+function sanitizeSheetTitle(title) {
+  const clean = (title || '会合').replace(/[\[\]\*\?\/\\:]/g, '').trim();
+  return (clean || '会合').slice(0, 90);
+}
+
+// スプレッドシート内の既存タブ一覧を取得
+async function getSheetTitles(token) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}?fields=sheets.properties.title`;
+  const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+  const data = await res.json();
+  return (data.sheets || []).map(s => s.properties.title);
+}
+
+// タブが無ければ作成し、見出し行を入れる
+async function ensureSheetTab(token, sheetTitle, existingTitles) {
+  if (existingTitles.includes(sheetTitle)) return;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}:batchUpdate`;
+  await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      requests: [{ addSheet: { properties: { title: sheetTitle } } }],
+    }),
+  });
+  existingTitles.push(sheetTitle);
+  const headerRow = ['日時', '氏名', '役職', '地区・担当', 'クラス', '出欠', '理由'];
+  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(sheetTitle + '!A1:G1')}?valueInputOption=USER_ENTERED`;
+  await fetch(headerUrl, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ values: [headerRow] }),
+  });
+}
+
+function recordToRow(record) {
+  const roleParts = (record.role || '').split(' / ');
+  return [
+    record.time || '',
+    record.name || '',
+    roleParts[0] || '',
+    roleParts[1] || '',
+    record.cls || '',
+    record.status || '',
+    record.reason || '',
+  ];
+}
+
+// PTAチェックイン記録を、会合名タブに1行追記（ベストエフォート：失敗してもチェックイン自体は成功扱い）
+async function appendPtaRecordToSheet(env, record, meetingTitle) {
   try {
     if (!env.GOOGLE_SERVICE_ACCOUNT_KEY) return;
     const token = await getGoogleAccessToken(env);
-    const roleParts = (record.role || '').split(' / ');
-    const roleBase = roleParts[0] || '';
-    const roleDetail = roleParts[1] || '';
-    const row = [
-      record.time || '',
-      record.name || '',
-      roleBase,
-      roleDetail,
-      record.cls || '',
-      record.status || '',
-      record.reason || '',
-    ];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(PTA_SHEET_RANGE)}:append?valueInputOption=USER_ENTERED`;
+    const sheetTitle = sanitizeSheetTitle(meetingTitle);
+    const existingTitles = await getSheetTitles(token);
+    await ensureSheetTab(token, sheetTitle, existingTitles);
+    const range = `${sheetTitle}!A:G`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`;
     await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ values: [row] }),
+      body: JSON.stringify({ values: [recordToRow(record)] }),
     });
   } catch (e) {
     console.error('スプレッドシート反映失敗:', e.message);
   }
 }
 
-// 過去分をまとめて一括反映（1回限りのバックフィル用）
+// 過去分をまとめて一括反映（会合ごとにタブを分けて反映。1回限りのバックフィル用）
 async function backfillPtaRecordsToSheet(env) {
   if (!env.GOOGLE_SERVICE_ACCOUNT_KEY) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY未設定');
   const data = await env.HAIYO_KV.get('meetings', 'json') || {};
-  const rows = [];
+  const token = await getGoogleAccessToken(env);
+  const existingTitles = await getSheetTitles(token);
+  let total = 0;
   for (const id of Object.keys(data)) {
     const records = data[id].records || [];
-    for (const record of records) {
-      const roleParts = (record.role || '').split(' / ');
-      rows.push([
-        record.time || '',
-        record.name || '',
-        roleParts[0] || '',
-        roleParts[1] || '',
-        record.cls || '',
-        record.status || '',
-        record.reason || '',
-      ]);
-    }
+    if (records.length === 0) continue;
+    const sheetTitle = sanitizeSheetTitle(data[id].title);
+    await ensureSheetTab(token, sheetTitle, existingTitles);
+    const rows = records.map(recordToRow);
+    const range = `${sheetTitle}!A:G`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ values: rows }),
+    });
+    if (!res.ok) throw new Error(`Sheets API error (${sheetTitle}): ` + (await res.text()));
+    total += rows.length;
   }
-  if (rows.length === 0) return 0;
-  const token = await getGoogleAccessToken(env);
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(PTA_SHEET_RANGE)}:append?valueInputOption=USER_ENTERED`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ values: rows }),
-  });
-  if (!res.ok) throw new Error('Sheets API error: ' + (await res.text()));
-  return rows.length;
+  return total;
 }
 
 export default {
@@ -300,7 +340,7 @@ async function handleAPI(request, env, url) {
           await env.HAIYO_KV.put(KV_KEY, JSON.stringify(data));
           // 松一小PTA（役職ベース）のチェックインのみスプレッドシートにも反映
           if (!isSeibu && !isSupport) {
-            await appendPtaRecordToSheet(env, record);
+            await appendPtaRecordToSheet(env, record, data[id].title);
           }
           return new Response(JSON.stringify({ ok: true, record }), { headers });
         } catch (e) {

@@ -115,7 +115,58 @@ function recordToRow(record) {
   ];
 }
 
-// PTAチェックイン記録を、会合名タブに1行追記（ベストエフォート：失敗してもチェックイン自体は成功扱い）
+// index.htmlの役職順に合わせた並び順
+const ROLE_ORDER = ['会長', '副会長', '監事', '幹事', '地区委員', '校長・教頭・教務主任'];
+const KANJI_SUB_ORDER = ['110番', '人権', '人権・給食', '広報', 'サポート'];
+
+function roleSortKey(row) {
+  const roleBase = row[2] || '';
+  const roleDetail = row[3] || '';
+  const primary = ROLE_ORDER.includes(roleBase) ? ROLE_ORDER.indexOf(roleBase) : ROLE_ORDER.length;
+  let secondary = 0;
+  if (roleBase === '幹事') {
+    secondary = KANJI_SUB_ORDER.includes(roleDetail) ? KANJI_SUB_ORDER.indexOf(roleDetail) : KANJI_SUB_ORDER.length;
+  } else if (roleBase === '地区委員') {
+    const m = roleDetail.match(/(\d+)/);
+    secondary = m ? parseInt(m[1], 10) : 999;
+  }
+  return [primary, secondary, row[0] || ''];
+}
+
+function sortRowsByRole(rows) {
+  return rows.slice().sort((a, b) => {
+    const ka = roleSortKey(a), kb = roleSortKey(b);
+    if (ka[0] !== kb[0]) return ka[0] - kb[0];
+    if (ka[1] !== kb[1]) return ka[1] - kb[1];
+    return ka[2] < kb[2] ? -1 : ka[2] > kb[2] ? 1 : 0;
+  });
+}
+
+// 指定タブの既存データ行（見出しを除く）を取得
+async function getExistingRows(token, sheetTitle) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(sheetTitle + '!A2:G')}`;
+  const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+  const data = await res.json();
+  return data.values || [];
+}
+
+// 指定タブのデータ行（見出しを除く）を丸ごと上書き
+async function writeRows(token, sheetTitle, rows) {
+  const endRow = rows.length + 1;
+  const range = `${sheetTitle}!A2:G${endRow}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ values: rows }),
+  });
+  if (!res.ok) throw new Error(`Sheets API error (${sheetTitle}): ` + (await res.text()));
+}
+
+// PTAチェックイン記録を、会合名タブに反映し役職順に並び替え（ベストエフォート：失敗してもチェックイン自体は成功扱い）
 async function appendPtaRecordToSheet(env, record, meetingTitle) {
   try {
     if (!env.GOOGLE_SERVICE_ACCOUNT_KEY) return;
@@ -123,22 +174,15 @@ async function appendPtaRecordToSheet(env, record, meetingTitle) {
     const sheetTitle = sanitizeSheetTitle(meetingTitle);
     const existingTitles = await getSheetTitles(token);
     await ensureSheetTab(token, sheetTitle, existingTitles);
-    const range = `${sheetTitle}!A:G`;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`;
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ values: [recordToRow(record)] }),
-    });
+    const existingRows = await getExistingRows(token, sheetTitle);
+    existingRows.push(recordToRow(record));
+    await writeRows(token, sheetTitle, sortRowsByRole(existingRows));
   } catch (e) {
     console.error('スプレッドシート反映失敗:', e.message);
   }
 }
 
-// 過去分をまとめて一括反映（会合ごとにタブを分けて反映。1回限りのバックフィル用）
+// 過去分をまとめて一括反映（会合ごとにタブを分け、役職順に並べて反映。何度実行しても上書きされるだけで重複しない）
 async function backfillPtaRecordsToSheet(env) {
   if (!env.GOOGLE_SERVICE_ACCOUNT_KEY) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY未設定');
   const data = await env.HAIYO_KV.get('meetings', 'json') || {};
@@ -150,18 +194,8 @@ async function backfillPtaRecordsToSheet(env) {
     if (records.length === 0) continue;
     const sheetTitle = sanitizeSheetTitle(data[id].title);
     await ensureSheetTab(token, sheetTitle, existingTitles);
-    const rows = records.map(recordToRow);
-    const range = `${sheetTitle}!A:G`;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ values: rows }),
-    });
-    if (!res.ok) throw new Error(`Sheets API error (${sheetTitle}): ` + (await res.text()));
+    const rows = sortRowsByRole(records.map(recordToRow));
+    await writeRows(token, sheetTitle, rows);
     total += rows.length;
   }
   return total;

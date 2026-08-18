@@ -357,12 +357,10 @@ async function handleAPI(request, env, url) {
           ? records.find(r => r.studentName === record.studentName && r.parent === record.parent)
           : records.find(r => r.name === record.name && r.childName === record.childName);
         if (dup) {
-          // 既存レコードを上書き（日程の修正に対応）
-          const idx = records.indexOf(dup);
-          records[idx] = record;
-        } else {
-          records.push(record);
+          // 既に登録済み → 上書きせず「登録済み」を返す（修正は編集ボタンから行う）
+          return new Response(JSON.stringify({ error: 'duplicate', record: dup }), { headers });
         }
+        records.push(record);
         data[id].records = records;
         // attendeesも更新
         if (record.status === '出席' && record.cls && record.cls !== 'なし') {
@@ -382,6 +380,38 @@ async function handleAPI(request, env, url) {
           await new Promise(r => setTimeout(r, 100));
         }
       }
+    }
+
+    // POST /meetings/:id/dedupe - 既に重複登録されている分を1件のみに整理（最新の記録を残す）
+    if (url.pathname.match(new RegExp(`^${meetingsPath}/[^/]+/dedupe$`)) && request.method === 'POST') {
+      const id = url.pathname.replace(meetingsPath + '/', '').split('/')[0];
+      const data = await env.HAIYO_KV.get(KV_KEY, 'json') || {};
+      if (!data[id]) return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers });
+      const records = data[id].records || [];
+      const keyOf = r => isSeibu ? `${r.studentName}::${r.parent}` : `${r.name}::${r.childName}`;
+      const latestByKey = new Map();
+      records.forEach(r => {
+        const k = keyOf(r);
+        const cur = latestByKey.get(k);
+        // time文字列が新しい（または同じ）ものを残す。timeが無ければ後勝ち
+        if (!cur || !r.time || !cur.time || r.time >= cur.time) latestByKey.set(k, r);
+      });
+      const deduped = Array.from(latestByKey.values());
+      const removed = records.length - deduped.length;
+      data[id].records = deduped;
+      // attendeesを再集計
+      if (!isSeibu) {
+        const attendees = {};
+        deduped.forEach(r => {
+          if (r.status === '出席' && r.cls && r.cls !== 'なし') {
+            const cls = r.cls.split('・')[0];
+            attendees[cls] = (attendees[cls] || 0) + 1;
+          }
+        });
+        data[id].attendees = attendees;
+      }
+      await env.HAIYO_KV.put(KV_KEY, JSON.stringify(data));
+      return new Response(JSON.stringify({ ok: true, removed, total: deduped.length }), { headers });
     }
 
     // PUT /meetings/:id/records/:idx - 1件修正

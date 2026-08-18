@@ -150,7 +150,7 @@ async function getExistingRows(token, sheetTitle) {
   return data.values || [];
 }
 
-// 指定タブのデータ行（見出しを除く）を丸ごと上書き
+// 指定タブのデータ行（見出しを除く）を丸ごと上書き。書き込み範囲より下に残っている古い行（重複整理で減った分など）も消す
 async function writeRows(token, sheetTitle, rows) {
   const endRow = rows.length + 1;
   const range = `${sheetTitle}!A2:G${endRow}`;
@@ -164,6 +164,10 @@ async function writeRows(token, sheetTitle, rows) {
     body: JSON.stringify({ values: rows }),
   });
   if (!res.ok) throw new Error(`Sheets API error (${sheetTitle}): ` + (await res.text()));
+  // 今回書いた範囲より下（例えば重複整理で行数が減った場合の残骸）をクリア
+  const clearRange = `${sheetTitle}!A${endRow + 1}:G3000`;
+  const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${PTA_SPREADSHEET_ID}/values/${encodeURIComponent(clearRange)}:clear`;
+  await fetch(clearUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
 }
 
 // PTAチェックイン記録を、会合名タブに反映し役職順に並び替え（ベストエフォート：失敗してもチェックイン自体は成功扱い）
@@ -179,6 +183,20 @@ async function appendPtaRecordToSheet(env, record, meetingTitle) {
     await writeRows(token, sheetTitle, sortRowsByRole(existingRows));
   } catch (e) {
     console.error('スプレッドシート反映失敗:', e.message);
+  }
+}
+
+// 指定の会合の記録一覧で、スプレッドシートのタブを丸ごと同期し直す（重複整理後に使用）
+async function syncPtaMeetingToSheet(env, meetingTitle, records) {
+  try {
+    if (!env.GOOGLE_SERVICE_ACCOUNT_KEY) return;
+    const token = await getGoogleAccessToken(env);
+    const sheetTitle = sanitizeSheetTitle(meetingTitle);
+    const existingTitles = await getSheetTitles(token);
+    await ensureSheetTab(token, sheetTitle, existingTitles);
+    await writeRows(token, sheetTitle, sortRowsByRole(records.map(recordToRow)));
+  } catch (e) {
+    console.error('スプレッドシート同期失敗:', e.message);
   }
 }
 
@@ -411,6 +429,10 @@ async function handleAPI(request, env, url) {
         data[id].attendees = attendees;
       }
       await env.HAIYO_KV.put(KV_KEY, JSON.stringify(data));
+      // 松一小PTA（役職ベース）のみスプレッドシートも重複整理後の内容に同期
+      if (!isSeibu && !isSupport) {
+        await syncPtaMeetingToSheet(env, data[id].title, deduped);
+      }
       return new Response(JSON.stringify({ ok: true, removed, total: deduped.length }), { headers });
     }
 

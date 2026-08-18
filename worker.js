@@ -298,6 +298,31 @@ async function handleNisshi(request, env, url) {
   }
 }
 
+function normalizeName(s) {
+  // 全角・半角スペースを除去して比較（「林 里美」と「林里美」を同一人物として扱う）
+  return (s || '').replace(/[\s\u3000]/g, '');
+}
+
+// 二重登録の判定キー
+// ・松一小PTA（役職ベース／index.html）: 学年・クラス（cls）＋役職（role）＋子供の名前 が同じなら同一人物とみなす
+//   （保護者名の表記ゆれ「林 里美」「林里美」は無視する）
+// ・サポート運営（support-checkin.html）: 役職が無いのでクラス＋保護者名＋子供の名前で判定（名前は表記ゆれを無視）
+// ・西武文理サポーター（isSeibu）: 生徒名＋保護者名で判定（表記ゆれを無視）
+function isDuplicateRecord(existing, incoming, isSeibu, isSupport) {
+  if (isSeibu) {
+    return normalizeName(existing.studentName) === normalizeName(incoming.studentName)
+      && normalizeName(existing.parent) === normalizeName(incoming.parent);
+  }
+  if (isSupport) {
+    return (existing.cls || '') === (incoming.cls || '')
+      && normalizeName(existing.name) === normalizeName(incoming.name)
+      && normalizeName(existing.childName) === normalizeName(incoming.childName);
+  }
+  return (existing.cls || '') === (incoming.cls || '')
+    && (existing.role || '') === (incoming.role || '')
+    && normalizeName(existing.childName) === normalizeName(incoming.childName);
+}
+
 async function handleAPI(request, env, url) {
   const headers = {
     'Content-Type': 'application/json',
@@ -371,9 +396,7 @@ async function handleAPI(request, env, url) {
         if (!data[id]) return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers });
         // 二重登録チェック（サーバーサイド）
         const records = data[id].records || [];
-        const dup = isSeibu
-          ? records.find(r => r.studentName === record.studentName && r.parent === record.parent)
-          : records.find(r => r.name === record.name && r.childName === record.childName);
+        const dup = records.find(r => isDuplicateRecord(r, record, isSeibu, isSupport));
         if (dup) {
           // 既に登録済み → 上書きせず「登録済み」を返す（修正は編集ボタンから行う）
           return new Response(JSON.stringify({ error: 'duplicate', record: dup }), { headers });
@@ -406,7 +429,11 @@ async function handleAPI(request, env, url) {
       const data = await env.HAIYO_KV.get(KV_KEY, 'json') || {};
       if (!data[id]) return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers });
       const records = data[id].records || [];
-      const keyOf = r => isSeibu ? `${r.studentName}::${r.parent}` : `${r.name}::${r.childName}`;
+      const keyOf = r => isSeibu
+        ? `${normalizeName(r.studentName)}::${normalizeName(r.parent)}`
+        : isSupport
+          ? `${r.cls || ''}::${normalizeName(r.name)}::${normalizeName(r.childName)}`
+          : `${r.cls || ''}::${r.role || ''}::${normalizeName(r.childName)}`;
       const latestByKey = new Map();
       records.forEach(r => {
         const k = keyOf(r);

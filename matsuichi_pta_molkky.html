@@ -83,13 +83,13 @@ th{background:var(--lg);color:var(--forest);font-size:.78rem;}
     <div class="card-head">＋ 新しいイベントを作成</div>
     <div class="row">
       <input class="inp" id="newEventName" type="text" placeholder="例：〇月〇日 モルック大会">
-      <button class="btn btn-green" onclick="createMolkkyEvent()">作成してURLを発行</button>
+      <button class="btn btn-green" onclick="createMolkkyEvent(this)">作成してURLを発行</button>
     </div>
-    <div class="note">イベントごとにデータが分かれるので、本番用と別に「テスト用」イベントを作って何度でも試せます。</div>
+    <div class="note">イベントごとにデータが分かれるので、本番用と別に「テスト用」イベントを作って何度でも試せます。データはサーバーに保存されるので、PC・スマホなど別の端末からも同じイベントを見られます。</div>
   </div>
   <div class="card">
     <div class="card-head">イベント一覧</div>
-    <div id="eventListArea"></div>
+    <div id="eventListArea"><div class="empty">読み込み中…</div></div>
   </div>
 </section>
 
@@ -117,25 +117,31 @@ th{background:var(--lg);color:var(--forest);font-size:.78rem;}
 </div>
 
 <script>
-const EVENTS_KEY='matsuichi_molkky_events_v1';
 const rounds=[1,2,3,4,5,6,7,8,9,10];
 const TEAM_LETTERS=Array.from({length:14},(_,i)=>String.fromCharCode(65+i)); // A〜N
 const params=new URLSearchParams(location.search);
 const EVENT_ID=params.get('event');
+let RANK_TIMER=null;
 
-function loadEvents(){return JSON.parse(localStorage.getItem(EVENTS_KEY)||'null')||{events:{}};}
-function saveEvents(ev){localStorage.setItem(EVENTS_KEY,JSON.stringify(ev));}
-function dataKey(id){return 'matsuichi_molkky_data_'+id;}
+const api={
+  async get(path){const r=await fetch('/api/molkky'+path);return r.json();},
+  async post(path,body){const r=await fetch('/api/molkky'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json();},
+  async put(path,body){const r=await fetch('/api/molkky'+path,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json();},
+  async del(path){const r=await fetch('/api/molkky'+path,{method:'DELETE'});return r.json();},
+};
 function fmtDate(ts){return new Date(ts).toLocaleString('ja-JP',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 
 // ── イベント一覧画面 ──
-function renderEventList(){
-  const ev=loadEvents();
-  const ids=Object.keys(ev.events).sort((a,b)=>ev.events[b].created-ev.events[a].created);
+async function renderEventList(){
   const area=document.getElementById('eventListArea');
+  let ev;
+  try{ ev=await api.get('/events'); }
+  catch(e){ area.innerHTML='<div class="empty">読み込みに失敗しました。通信環境をご確認のうえ再読み込みしてください。</div>'; return; }
+  const events=ev.events||{};
+  const ids=Object.keys(events).sort((a,b)=>events[b].created-events[a].created);
   if(ids.length===0){area.innerHTML='<div class="empty">イベントがまだありません。上のフォームから作成してください。</div>';return;}
   area.innerHTML=ids.map(id=>{
-    const e=ev.events[id];
+    const e=events[id];
     return `<div class="ev-item">
       <div>
         <div class="ev-name">${e.name}</div>
@@ -149,15 +155,18 @@ function renderEventList(){
     </div>`;
   }).join('');
 }
-function createMolkkyEvent(){
+async function createMolkkyEvent(btn){
   const nameInput=document.getElementById('newEventName');
   const name=nameInput.value.trim() || `モルック大会 ${new Date().toLocaleDateString('ja-JP')}`;
-  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const ev=loadEvents();
-  ev.events[id]={name,created:Date.now()};
-  saveEvents(ev);
-  nameInput.value='';
-  openEvent(id);
+  btn.disabled=true; btn.textContent='作成中…';
+  try{
+    const res=await api.post('/events',{name});
+    nameInput.value='';
+    openEvent(res.id);
+  }catch(e){
+    alert('作成に失敗しました。通信環境をご確認のうえもう一度お試しください。');
+    btn.disabled=false; btn.textContent='作成してURLを発行';
+  }
 }
 function openEvent(id){
   location.href=location.pathname+'?event='+id;
@@ -170,31 +179,28 @@ function copyLink(id){
     alert(url);
   }
 }
-function deleteEvent(id){
-  const ev=loadEvents();
-  const name=ev.events[id]?.name||'このイベント';
-  if(!confirm(`「${name}」を削除しますか？記録した得点も消えます。`))return;
-  delete ev.events[id];
-  saveEvents(ev);
-  localStorage.removeItem(dataKey(id));
+async function deleteEvent(id){
+  if(!confirm('このイベントを削除しますか？記録した得点も消えます。'))return;
+  await api.del('/events/'+id);
   renderEventList();
 }
 function backToEventList(){
+  if(RANK_TIMER) clearInterval(RANK_TIMER);
   location.href=location.pathname;
 }
 
 // ── イベント内：チーム記録・順位 ──
 let data=null;
-function loadData(){data=JSON.parse(localStorage.getItem(dataKey(EVENT_ID))||'null')||{teams:{},current:'A'};}
-function save(){localStorage.setItem(dataKey(EVENT_ID),JSON.stringify(data));}
+async function loadData(){data=await api.get('/events/'+EVENT_ID+'/data'); if(!data.teams)data.teams={};}
+async function save(){await api.put('/events/'+EVENT_ID+'/data',data);}
 function letters(){return Object.keys(data.teams).sort((a,b)=>a.localeCompare(b,'ja'));}
-function ensureInitial(){
+async function ensureInitial(){
   let added=false;
   TEAM_LETTERS.forEach(code=>{
     if(!data.teams[code]){data.teams[code]={players:6,scores:{}};added=true;}
   });
   if(!data.current || !data.teams[data.current]) data.current='A';
-  if(added) save();
+  if(added) await save();
 }
 function renderSelect(){
   const sel=document.getElementById('teamSelect');
@@ -233,18 +239,18 @@ function renderRecord(){
   </div>`;
   document.getElementById('recordArea').innerHTML=html;
 }
-function setPlayers(v){data.teams[data.current].players=Number(v); save(); renderEventAll();}
-function setScore(r,n,v){
+async function setPlayers(v){data.teams[data.current].players=Number(v); await save(); renderRecord();}
+async function setScore(r,n,v){
   const team=data.teams[data.current];
   const key=`${r}-${n}`;
   if(v==='') delete team.scores[key];
   else team.scores[key]=Number(v);
-  save(); renderEventAll();
+  await save(); renderRecord();
 }
 function total(team){return Object.values(team.scores).reduce((a,b)=>a+(Number(b)||0),0);}
-function clearTeam(){
+async function clearTeam(){
   if(confirm(`チーム ${data.current} の得点をすべて消しますか？`)){
-    data.teams[data.current].scores={}; save(); renderEventAll();
+    data.teams[data.current].scores={}; await save(); renderRecord();
   }
 }
 function renderRank(){
@@ -257,28 +263,32 @@ function renderRank(){
       <span class="stat-n">${x.total}点</span>
     </div>`).join('') : '<div class="empty">チームがありません。</div>';
 }
-function renderEventAll(){renderSelect();renderRecord();renderRank();}
-function showTab(tab){
+async function showTab(tab){
   document.getElementById('record').classList.toggle('hidden',tab!=='record');
   document.getElementById('rank').classList.toggle('hidden',tab!=='rank');
   document.getElementById('tabRecord').classList.toggle('on',tab==='record');
   document.getElementById('tabRank').classList.toggle('on',tab==='rank');
-  if(tab==='rank')renderRank();
+  if(RANK_TIMER){clearInterval(RANK_TIMER);RANK_TIMER=null;}
+  if(tab==='rank'){
+    await loadData();
+    renderRank();
+    RANK_TIMER=setInterval(async()=>{await loadData();renderRank();},10000); // 他端末の更新を10秒おきに反映
+  }
 }
 
 // ── 起動処理 ──
-function init(){
+async function init(){
   if(EVENT_ID){
-    const ev=loadEvents();
-    const meta=ev.events[EVENT_ID];
     document.getElementById('eventList').classList.add('hidden');
     document.getElementById('eventBody').classList.remove('hidden');
     document.getElementById('tabs').classList.remove('hidden');
     document.getElementById('topbarPill').outerHTML='<button class="back-link" onclick="backToEventList()">← イベント一覧へ</button>';
+    let meta=null;
+    try{ const ev=await api.get('/events'); meta=ev.events?.[EVENT_ID]||null; }catch(e){}
     document.getElementById('topbarSub').textContent=meta?meta.name:'（不明なイベント）';
-    loadData();
-    ensureInitial();
-    renderEventAll();
+    await loadData();
+    await ensureInitial();
+    renderSelect(); renderRecord();
   }else{
     document.getElementById('eventList').classList.remove('hidden');
     document.getElementById('eventBody').classList.add('hidden');

@@ -230,12 +230,76 @@ export default {
         headers: {'Content-Type': 'text/html;charset=utf-8'},
       });
     }
+    if (url.pathname.startsWith('/api/molkky')) {
+      return handleMolkky(request, env, url);
+    }
     if (url.pathname.startsWith('/api/')) {
       return handleAPI(request, env, url);
     }
     return env.ASSETS.fetch(request);
   }
 };
+
+// ── モルック得点表（イベント単位でチーム得点をKVに保存、複数端末で共有） ──
+async function handleMolkky(request, env, url) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+  if (request.method === 'OPTIONS') return new Response(null, { headers });
+
+  const EVENTS_KEY = 'molkky_events';
+  const dataKey = (id) => 'molkky_data_' + id;
+
+  try {
+    // GET /api/molkky/events - イベント一覧
+    if (url.pathname === '/api/molkky/events' && request.method === 'GET') {
+      const ev = await env.HAIYO_KV.get(EVENTS_KEY, 'json') || { events: {} };
+      return new Response(JSON.stringify(ev), { headers });
+    }
+
+    // POST /api/molkky/events - イベント作成 { name }
+    if (url.pathname === '/api/molkky/events' && request.method === 'POST') {
+      const body = await request.json();
+      const ev = await env.HAIYO_KV.get(EVENTS_KEY, 'json') || { events: {} };
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      ev.events[id] = { name: body.name || 'モルック大会', created: Date.now() };
+      await env.HAIYO_KV.put(EVENTS_KEY, JSON.stringify(ev));
+      return new Response(JSON.stringify({ ok: true, id }), { headers });
+    }
+
+    // DELETE /api/molkky/events/:id - イベント削除
+    if (url.pathname.match(/^\/api\/molkky\/events\/[^/]+$/) && request.method === 'DELETE') {
+      const id = decodeURIComponent(url.pathname.split('/').pop());
+      const ev = await env.HAIYO_KV.get(EVENTS_KEY, 'json') || { events: {} };
+      delete ev.events[id];
+      await env.HAIYO_KV.put(EVENTS_KEY, JSON.stringify(ev));
+      await env.HAIYO_KV.delete(dataKey(id));
+      return new Response(JSON.stringify({ ok: true }), { headers });
+    }
+
+    // GET /api/molkky/events/:id/data - チーム得点取得
+    if (url.pathname.match(/^\/api\/molkky\/events\/[^/]+\/data$/) && request.method === 'GET') {
+      const id = url.pathname.split('/')[4];
+      const data = await env.HAIYO_KV.get(dataKey(id), 'json') || { teams: {} };
+      return new Response(JSON.stringify(data), { headers });
+    }
+
+    // PUT /api/molkky/events/:id/data - チーム得点保存
+    if (url.pathname.match(/^\/api\/molkky\/events\/[^/]+\/data$/) && request.method === 'PUT') {
+      const id = url.pathname.split('/')[4];
+      const data = await request.json();
+      await env.HAIYO_KV.put(dataKey(id), JSON.stringify(data));
+      return new Response(JSON.stringify({ ok: true }), { headers });
+    }
+
+    return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
+  }
+}
 
 async function handleNisshi(request, env, url) {
   const headers = {

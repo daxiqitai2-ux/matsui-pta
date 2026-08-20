@@ -10,9 +10,11 @@
 :root{--forest:#2e6b4f;--lg:#e8f4ec;--cream:#ede8de;--paper:#f7f2ea;--border:#cec8bc;--muted:#887f74;--amber:#c96a1e;--red:#b83232;--ink:#1e1a17;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;}
-.topbar{background:var(--forest);color:#fff;height:52px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.topbar{background:var(--forest);color:#fff;min-height:52px;padding:8px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.2);gap:8px;flex-wrap:wrap;}
 .topbar h1{font-size:1rem;font-weight:700;letter-spacing:.04em;}
-.pill{font-size:.7rem;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 10px;}
+.topbar-sub{font-size:.7rem;opacity:.85;margin-top:2px;}
+.pill{font-size:.7rem;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 10px;white-space:nowrap;}
+.back-link{background:none;border:none;color:#fff;font-family:'Noto Sans JP',sans-serif;font-size:.76rem;cursor:pointer;text-decoration:underline;opacity:.9;padding:0;}
 .tabs{display:flex;border-bottom:2px solid var(--border);background:#fff;position:sticky;top:52px;z-index:90;}
 .tab{flex:1;padding:12px 4px;border:none;background:none;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border-color .15s;}
 .tab.on{color:var(--forest);border-bottom-color:var(--forest);}
@@ -23,11 +25,13 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--i
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
 select,.inp{padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.92rem;font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);outline:none;}
 select:focus,.inp:focus{border-color:var(--forest);}
+.inp{flex:1;min-width:160px;}
 .btn{padding:10px 18px;border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-weight:700;font-size:.86rem;cursor:pointer;white-space:nowrap;}
 .btn:disabled{opacity:.35;cursor:not-allowed;}
 .btn-green{background:var(--forest);color:#fff;}
 .btn-amber{background:var(--amber);color:#fff;}
 .btn-ghost{background:var(--cream);color:var(--ink);}
+.btn-red{background:var(--red);color:#fff;}
 .btn-sm{padding:6px 12px;font-size:.76rem;}
 .hr{border:none;border-top:1.5px solid var(--border);margin:14px 0;}
 .table-wrap{overflow-x:auto;border-radius:10px;border:1.5px solid var(--border);}
@@ -44,6 +48,12 @@ th{background:var(--lg);color:var(--forest);font-size:.78rem;}
 .empty{text-align:center;color:var(--muted);padding:35px 10px;font-size:.86rem;}
 .note{font-size:.72rem;color:var(--muted);margin-top:8px;}
 .hidden{display:none!important;}
+/* イベント一覧 */
+.ev-item{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-radius:10px;background:var(--cream);margin-bottom:8px;gap:8px;flex-wrap:wrap;}
+.ev-name{font-weight:700;font-size:.92rem;}
+.ev-date{font-size:.7rem;color:var(--muted);margin-top:2px;}
+.ev-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.url-box{background:var(--cream);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.76rem;word-break:break-all;color:var(--ink);margin:8px 0;}
 @media(max-width:600px){
   .page{padding:14px 12px;}
   .card{padding:14px;}
@@ -52,59 +62,141 @@ th{background:var(--lg);color:var(--forest);font-size:.78rem;}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <h1>🎳 松一PTA モルック得点表</h1>
-  <span class="pill">チーム別・自動集計</span>
+<div class="topbar" id="topbar">
+  <div>
+    <h1>🎳 松一PTA モルック得点表</h1>
+    <div class="topbar-sub" id="topbarSub"></div>
+  </div>
+  <span class="pill" id="topbarPill">チーム別・自動集計</span>
 </div>
 
-<div class="tabs">
+<div id="tabs" class="tabs hidden">
   <button id="tabRecord" class="tab on" onclick="showTab('record')">📝 記録</button>
   <button id="tabRank" class="tab" onclick="showTab('rank')">🏆 順位</button>
 </div>
 
 <div class="page">
-<section id="record">
+
+<!-- イベント一覧画面 -->
+<section id="eventList">
   <div class="card">
-    <div class="card-head">チーム選択</div>
+    <div class="card-head">＋ 新しいイベントを作成</div>
     <div class="row">
-      <select id="teamSelect" onchange="renderRecord()"></select>
-      <button class="btn btn-green" onclick="addTeam()">＋ 新規チーム</button>
+      <input class="inp" id="newEventName" type="text" placeholder="例：〇月〇日 モルック大会">
+      <button class="btn btn-green" onclick="createEvent()">作成してURLを発行</button>
     </div>
-    <div class="note">チームは A・B・C… の順で自動的に追加されます。</div>
+    <div class="note">イベントごとにデータが分かれるので、本番用と別に「テスト用」イベントを作って何度でも試せます。</div>
   </div>
-
-  <div id="recordArea"></div>
-</section>
-
-<section id="rank" class="hidden">
   <div class="card">
-    <div class="card-head">🏆 現在の順位</div>
-    <div id="rankArea"></div>
+    <div class="card-head">イベント一覧</div>
+    <div id="eventListArea"></div>
   </div>
 </section>
+
+<!-- イベント内（記録・順位） -->
+<section id="eventBody" class="hidden">
+  <section id="record">
+    <div class="card">
+      <div class="card-head">チーム選択</div>
+      <div class="row">
+        <select id="teamSelect" onchange="renderRecord()"></select>
+        <button class="btn btn-green" onclick="addTeam()">＋ 新規チーム</button>
+      </div>
+      <div class="note">チームは A・B・C… の順で自動的に追加されます。</div>
+    </div>
+    <div id="recordArea"></div>
+  </section>
+
+  <section id="rank" class="hidden">
+    <div class="card">
+      <div class="card-head">🏆 現在の順位</div>
+      <div id="rankArea"></div>
+    </div>
+  </section>
+</section>
+
 </div>
 
 <script>
-const STORAGE_KEY='matsuichi_molkky_2026';
+const EVENTS_KEY='matsuichi_molkky_events_v1';
 const rounds=[1,2,3,4,5,6,7,8,9,10];
-let data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') || {teams:{}, current:'A'};
+const params=new URLSearchParams(location.search);
+const EVENT_ID=params.get('event');
 
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
+function loadEvents(){return JSON.parse(localStorage.getItem(EVENTS_KEY)||'null')||{events:{}};}
+function saveEvents(ev){localStorage.setItem(EVENTS_KEY,JSON.stringify(ev));}
+function dataKey(id){return 'matsuichi_molkky_data_'+id;}
+function fmtDate(ts){return new Date(ts).toLocaleString('ja-JP',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 
-function letters(){
-  return Object.keys(data.teams).sort((a,b)=>a.localeCompare(b,'ja'));
+// ── イベント一覧画面 ──
+function renderEventList(){
+  const ev=loadEvents();
+  const ids=Object.keys(ev.events).sort((a,b)=>ev.events[b].created-ev.events[a].created);
+  const area=document.getElementById('eventListArea');
+  if(ids.length===0){area.innerHTML='<div class="empty">イベントがまだありません。上のフォームから作成してください。</div>';return;}
+  area.innerHTML=ids.map(id=>{
+    const e=ev.events[id];
+    return `<div class="ev-item">
+      <div>
+        <div class="ev-name">${e.name}</div>
+        <div class="ev-date">作成：${fmtDate(e.created)}</div>
+      </div>
+      <div class="ev-btns">
+        <button class="btn btn-green btn-sm" onclick="openEvent('${id}')">開く</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyLink('${id}')">URLコピー</button>
+        <button class="btn btn-red btn-sm" onclick="deleteEvent('${id}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
 }
+function createEvent(){
+  const nameInput=document.getElementById('newEventName');
+  const name=nameInput.value.trim() || `モルック大会 ${new Date().toLocaleDateString('ja-JP')}`;
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const ev=loadEvents();
+  ev.events[id]={name,created:Date.now()};
+  saveEvents(ev);
+  nameInput.value='';
+  openEvent(id);
+}
+function openEvent(id){
+  location.href=location.pathname+'?event='+id;
+}
+function copyLink(id){
+  const url=location.origin+location.pathname+'?event='+id;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(()=>alert('URLをコピーしました：\n'+url)).catch(()=>alert(url));
+  }else{
+    alert(url);
+  }
+}
+function deleteEvent(id){
+  const ev=loadEvents();
+  const name=ev.events[id]?.name||'このイベント';
+  if(!confirm(`「${name}」を削除しますか？記録した得点も消えます。`))return;
+  delete ev.events[id];
+  saveEvents(ev);
+  localStorage.removeItem(dataKey(id));
+  renderEventList();
+}
+function backToEventList(){
+  location.href=location.pathname;
+}
+
+// ── イベント内：チーム記録・順位 ──
+let data=null;
+function loadData(){data=JSON.parse(localStorage.getItem(dataKey(EVENT_ID))||'null')||{teams:{},current:'A'};}
+function save(){localStorage.setItem(dataKey(EVENT_ID),JSON.stringify(data));}
+function letters(){return Object.keys(data.teams).sort((a,b)=>a.localeCompare(b,'ja'));}
 function addTeam(){
   const existing=letters();
   let code=String.fromCharCode(65);
   while(existing.includes(code)) code=String.fromCharCode(code.charCodeAt(0)+1);
   data.teams[code]={players:6,scores:{}};
   data.current=code;
-  save(); renderAll();
+  save(); renderEventAll();
 }
-function ensureInitial(){
-  if(letters().length===0) addTeam();
-}
+function ensureInitial(){if(letters().length===0) addTeam();}
 function renderSelect(){
   const sel=document.getElementById('teamSelect');
   sel.innerHTML=letters().map(t=>`<option value="${t}" ${t===data.current?'selected':''}>チーム ${t}</option>`).join('');
@@ -142,21 +234,18 @@ function renderRecord(){
   </div>`;
   document.getElementById('recordArea').innerHTML=html;
 }
-function setPlayers(v){
-  data.teams[data.current].players=Number(v);
-  save(); renderAll();
-}
+function setPlayers(v){data.teams[data.current].players=Number(v); save(); renderEventAll();}
 function setScore(r,n,v){
   const team=data.teams[data.current];
   const key=`${r}-${n}`;
   if(v==='') delete team.scores[key];
   else team.scores[key]=Number(v);
-  save(); renderAll();
+  save(); renderEventAll();
 }
 function total(team){return Object.values(team.scores).reduce((a,b)=>a+(Number(b)||0),0);}
 function clearTeam(){
   if(confirm(`チーム ${data.current} の得点をすべて消しますか？`)){
-    data.teams[data.current].scores={}; save(); renderAll();
+    data.teams[data.current].scores={}; save(); renderEventAll();
   }
 }
 function renderRank(){
@@ -169,7 +258,7 @@ function renderRank(){
       <span class="stat-n">${x.total}点</span>
     </div>`).join('') : '<div class="empty">チームがありません。</div>';
 }
-function renderAll(){renderSelect();renderRecord();renderRank();}
+function renderEventAll(){renderSelect();renderRecord();renderRank();}
 function showTab(tab){
   document.getElementById('record').classList.toggle('hidden',tab!=='record');
   document.getElementById('rank').classList.toggle('hidden',tab!=='rank');
@@ -177,7 +266,28 @@ function showTab(tab){
   document.getElementById('tabRank').classList.toggle('on',tab==='rank');
   if(tab==='rank')renderRank();
 }
-ensureInitial(); renderAll();
+
+// ── 起動処理 ──
+function init(){
+  if(EVENT_ID){
+    const ev=loadEvents();
+    const meta=ev.events[EVENT_ID];
+    document.getElementById('eventList').classList.add('hidden');
+    document.getElementById('eventBody').classList.remove('hidden');
+    document.getElementById('tabs').classList.remove('hidden');
+    document.getElementById('topbarPill').outerHTML='<button class="back-link" onclick="backToEventList()">← イベント一覧へ</button>';
+    document.getElementById('topbarSub').textContent=meta?meta.name:'（不明なイベント）';
+    loadData();
+    ensureInitial();
+    renderEventAll();
+  }else{
+    document.getElementById('eventList').classList.remove('hidden');
+    document.getElementById('eventBody').classList.add('hidden');
+    document.getElementById('tabs').classList.add('hidden');
+    renderEventList();
+  }
+}
+init();
 </script>
 </body>
 </html>

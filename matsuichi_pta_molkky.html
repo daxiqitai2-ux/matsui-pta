@@ -228,7 +228,7 @@ function renderRecord(){
     html+=`<tr><th>${r}巡目</th>${cols.map(n=>{
       const key=`${r}-${n}`;
       const val=team.scores[key] ?? '';
-      return `<td><input class="score" type="number" inputmode="numeric" min="0" value="${val}" onchange="setScore(${r},${n},this.value)" onclick="this.select()"></td>`;
+      return `<td><input class="score" id="cell-${r}-${n}" type="number" inputmode="numeric" min="0" value="${val}" onchange="setScore(${r},${n},this.value)" onclick="this.select()"></td>`;
     }).join('')}</tr>`;
   }
   html+=`</tbody></table></div>
@@ -246,6 +246,15 @@ async function setScore(r,n,v){
   if(v==='') delete team.scores[key];
   else team.scores[key]=Number(v);
   await save(); renderRecord();
+  focusNextCell(r,n);
+}
+function focusNextCell(r,n){
+  const team=data.teams[data.current];
+  let nr=r, nn=n+1;
+  if(nn>team.players){nn=1; nr=r+1;}
+  if(nr>rounds[rounds.length-1]) return; // 最後のセルなら移動しない
+  const next=document.getElementById(`cell-${nr}-${nn}`);
+  if(next){next.focus(); next.select();}
 }
 function total(team){return Object.values(team.scores).reduce((a,b)=>a+(Number(b)||0),0);}
 async function clearTeam(){

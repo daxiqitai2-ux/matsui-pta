@@ -1,71 +1,76 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#1f6feb">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#2e6b4f">
 <title>松一PTA モルック得点表</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;background:#f5f7fa;color:#222}
-header{background:#1f6feb;color:white;padding:18px 16px 14px;position:sticky;top:0;z-index:5}
-header h1{margin:0;font-size:22px}
-header small{opacity:.9}
-nav{display:flex;background:white;border-bottom:1px solid #ddd;position:sticky;top:73px;z-index:4}
-nav button{flex:1;border:0;background:white;padding:14px 8px;font-size:16px;font-weight:700;color:#555}
-nav button.active{color:#1f6feb;border-bottom:3px solid #1f6feb}
-main{padding:14px;max-width:900px;margin:auto}
-.card{background:white;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 2px 8px #0000000d}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-label{font-weight:700}
-select,input{font-size:17px;padding:10px;border:1px solid #ccc;border-radius:9px;background:white}
-select{min-width:100px}
-button.primary,.newbtn{border:0;background:#1f6feb;color:white;border-radius:10px;padding:11px 15px;font-size:16px;font-weight:700}
-button.secondary{border:1px solid #bbb;background:white;border-radius:10px;padding:10px 14px;font-size:15px}
-.score-title{font-size:19px;font-weight:800;margin-bottom:10px}
-.total{font-size:22px;font-weight:800;text-align:right;margin-top:12px}
-.table-wrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:500px}
-th,td{border:1px solid #ddd;text-align:center;padding:6px}
-th{background:#eef3f9}
-.score{width:58px;text-align:center;padding:8px 4px}
-.rank{font-size:21px;font-weight:800}
-.teamrow{display:flex;justify-content:space-between;align-items:center;padding:13px 4px;border-bottom:1px solid #eee}
-.teamrow:last-child{border-bottom:0}
-.empty{text-align:center;color:#777;padding:35px 10px}
-.note{font-size:13px;color:#666;margin-top:8px}
-.hidden{display:none}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+:root{--forest:#2e6b4f;--lg:#e8f4ec;--cream:#ede8de;--paper:#f7f2ea;--border:#cec8bc;--muted:#887f74;--amber:#c96a1e;--red:#b83232;--ink:#1e1a17;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;}
+.topbar{background:var(--forest);color:#fff;height:52px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.topbar h1{font-size:1rem;font-weight:700;letter-spacing:.04em;}
+.pill{font-size:.7rem;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 10px;}
+.tabs{display:flex;border-bottom:2px solid var(--border);background:#fff;position:sticky;top:52px;z-index:90;}
+.tab{flex:1;padding:12px 4px;border:none;background:none;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border-color .15s;}
+.tab.on{color:var(--forest);border-bottom-color:var(--forest);}
+.page{padding:18px 16px;max-width:640px;margin:0 auto;}
+.card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 6px rgba(0,0,0,.04);}
+.card-head{font-size:.95rem;font-weight:700;color:var(--forest);margin-bottom:14px;}
+.lbl{font-size:.76rem;color:var(--muted);margin-bottom:4px;}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+select,.inp{padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.92rem;font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);outline:none;}
+select:focus,.inp:focus{border-color:var(--forest);}
+.btn{padding:10px 18px;border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-weight:700;font-size:.86rem;cursor:pointer;white-space:nowrap;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-green{background:var(--forest);color:#fff;}
+.btn-amber{background:var(--amber);color:#fff;}
+.btn-ghost{background:var(--cream);color:var(--ink);}
+.btn-sm{padding:6px 12px;font-size:.76rem;}
+.hr{border:none;border-top:1.5px solid var(--border);margin:14px 0;}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1.5px solid var(--border);}
+table{border-collapse:collapse;width:100%;min-width:520px;}
+th,td{border:1px solid var(--border);text-align:center;padding:6px;}
+th{background:var(--lg);color:var(--forest);font-size:.78rem;}
+.score{width:56px;text-align:center;padding:8px 4px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;font-family:'Noto Sans JP',sans-serif;background:var(--paper);color:var(--ink);}
+.score:focus{border-color:var(--forest);outline:none;}
+.total{font-size:1.3rem;font-weight:700;text-align:right;margin-top:14px;color:var(--forest);}
+.rank{font-size:1.4rem;font-weight:700;}
+.teamrow{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-radius:10px;background:var(--cream);margin-bottom:8px;}
+.teamrow:first-child{background:var(--lg);border:1.5px solid var(--forest);}
+.stat-n{font-size:1.3rem;font-weight:700;color:var(--forest);}
+.empty{text-align:center;color:var(--muted);padding:35px 10px;font-size:.86rem;}
+.note{font-size:.72rem;color:var(--muted);margin-top:8px;}
+.hidden{display:none!important;}
 @media(max-width:600px){
-  main{padding:10px}
-  header{padding:14px}
-  header h1{font-size:20px}
-  nav{top:65px}
-  nav button{font-size:15px}
-  .card{padding:11px}
-  .score{width:52px}
+  .page{padding:14px 12px;}
+  .card{padding:14px;}
+  .score{width:48px;}
 }
 </style>
 </head>
 <body>
-<header>
-  <h1>松一PTA モルック得点表</h1>
-  <small>チームごとに記録・合計・順位を管理</small>
-</header>
+<div class="topbar">
+  <h1>🎳 松一PTA モルック得点表</h1>
+  <span class="pill">チーム別・自動集計</span>
+</div>
 
-<nav>
-  <button id="tabRecord" class="active" onclick="showTab('record')">📝 記録</button>
-  <button id="tabRank" onclick="showTab('rank')">🏆 順位</button>
-</nav>
+<div class="tabs">
+  <button id="tabRecord" class="tab on" onclick="showTab('record')">📝 記録</button>
+  <button id="tabRank" class="tab" onclick="showTab('rank')">🏆 順位</button>
+</div>
 
-<main>
+<div class="page">
 <section id="record">
   <div class="card">
+    <div class="card-head">チーム選択</div>
     <div class="row">
-      <label for="teamSelect">チーム</label>
       <select id="teamSelect" onchange="renderRecord()"></select>
-      <button class="newbtn" onclick="addTeam()">＋ 新規チーム</button>
+      <button class="btn btn-green" onclick="addTeam()">＋ 新規チーム</button>
     </div>
-    <div class="note">チームは A・B・C… から選択できます。</div>
+    <div class="note">チームは A・B・C… の順で自動的に追加されます。</div>
   </div>
 
   <div id="recordArea"></div>
@@ -73,11 +78,11 @@ th{background:#eef3f9}
 
 <section id="rank" class="hidden">
   <div class="card">
-    <div class="score-title">🏆 現在の順位</div>
+    <div class="card-head">🏆 現在の順位</div>
     <div id="rankArea"></div>
   </div>
 </section>
-</main>
+</div>
 
 <script>
 const STORAGE_KEY='matsuichi_molkky_2026';
@@ -102,7 +107,7 @@ function ensureInitial(){
 }
 function renderSelect(){
   const sel=document.getElementById('teamSelect');
-  sel.innerHTML=letters().map(t=>`<option value="${t}" ${t===data.current?'selected':''}>${t}</option>`).join('');
+  sel.innerHTML=letters().map(t=>`<option value="${t}" ${t===data.current?'selected':''}>チーム ${t}</option>`).join('');
   sel.value=data.current;
 }
 function renderRecord(){
@@ -112,9 +117,9 @@ function renderRecord(){
   if(!team)return;
   const cols=Array.from({length:team.players},(_,i)=>i+1);
   let html=`<div class="card">
-    <div class="score-title">チーム ${data.current}</div>
-    <div class="row" style="margin-bottom:10px">
-      <label>人数</label>
+    <div class="card-head">チーム ${data.current} の得点</div>
+    <div class="row">
+      <span class="lbl" style="margin-bottom:0">人数</span>
       <select onchange="setPlayers(this.value)">
         ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${n===team.players?'selected':''}>${n}人</option>`).join('')}
       </select>
@@ -130,9 +135,9 @@ function renderRecord(){
     }).join('')}</tr>`;
   }
   html+=`</tbody></table></div>
-    <div class="total">合計点：${total(team)}</div>
+    <div class="total">合計点：${total(team)} 点</div>
     <div class="row" style="justify-content:flex-end;margin-top:12px">
-      <button class="secondary" onclick="clearTeam()">このチームの得点をクリア</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearTeam()">このチームの得点をクリア</button>
     </div>
   </div>`;
   document.getElementById('recordArea').innerHTML=html;
@@ -161,15 +166,15 @@ function renderRank(){
   document.getElementById('rankArea').innerHTML=arr.length ? arr.map((x,i)=>`
     <div class="teamrow">
       <div><span class="rank">${medals[i]||((i+1)+'位')}</span>　チーム ${x.team}</div>
-      <strong style="font-size:20px">${x.total}点</strong>
+      <span class="stat-n">${x.total}点</span>
     </div>`).join('') : '<div class="empty">チームがありません。</div>';
 }
 function renderAll(){renderSelect();renderRecord();renderRank();}
 function showTab(tab){
   document.getElementById('record').classList.toggle('hidden',tab!=='record');
   document.getElementById('rank').classList.toggle('hidden',tab!=='rank');
-  document.getElementById('tabRecord').classList.toggle('active',tab==='record');
-  document.getElementById('tabRank').classList.toggle('active',tab==='rank');
+  document.getElementById('tabRecord').classList.toggle('on',tab==='record');
+  document.getElementById('tabRank').classList.toggle('on',tab==='rank');
   if(tab==='rank')renderRank();
 }
 ensureInitial(); renderAll();

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1f6feb">
+<title>松一PTA モルック得点表</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;background:#f5f7fa;color:#222}
+header{background:#1f6feb;color:white;padding:18px 16px 14px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:22px}
+header small{opacity:.9}
+nav{display:flex;background:white;border-bottom:1px solid #ddd;position:sticky;top:73px;z-index:4}
+nav button{flex:1;border:0;background:white;padding:14px 8px;font-size:16px;font-weight:700;color:#555}
+nav button.active{color:#1f6feb;border-bottom:3px solid #1f6feb}
+main{padding:14px;max-width:900px;margin:auto}
+.card{background:white;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 2px 8px #0000000d}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label{font-weight:700}
+select,input{font-size:17px;padding:10px;border:1px solid #ccc;border-radius:9px;background:white}
+select{min-width:100px}
+button.primary,.newbtn{border:0;background:#1f6feb;color:white;border-radius:10px;padding:11px 15px;font-size:16px;font-weight:700}
+button.secondary{border:1px solid #bbb;background:white;border-radius:10px;padding:10px 14px;font-size:15px}
+.score-title{font-size:19px;font-weight:800;margin-bottom:10px}
+.total{font-size:22px;font-weight:800;text-align:right;margin-top:12px}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:500px}
+th,td{border:1px solid #ddd;text-align:center;padding:6px}
+th{background:#eef3f9}
+.score{width:58px;text-align:center;padding:8px 4px}
+.rank{font-size:21px;font-weight:800}
+.teamrow{display:flex;justify-content:space-between;align-items:center;padding:13px 4px;border-bottom:1px solid #eee}
+.teamrow:last-child{border-bottom:0}
+.empty{text-align:center;color:#777;padding:35px 10px}
+.note{font-size:13px;color:#666;margin-top:8px}
+.hidden{display:none}
+@media(max-width:600px){
+  main{padding:10px}
+  header{padding:14px}
+  header h1{font-size:20px}
+  nav{top:65px}
+  nav button{font-size:15px}
+  .card{padding:11px}
+  .score{width:52px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>松一PTA モルック得点表</h1>
+  <small>チームごとに記録・合計・順位を管理</small>
+</header>
+
+<nav>
+  <button id="tabRecord" class="active" onclick="showTab('record')">📝 記録</button>
+  <button id="tabRank" onclick="showTab('rank')">🏆 順位</button>
+</nav>
+
+<main>
+<section id="record">
+  <div class="card">
+    <div class="row">
+      <label for="teamSelect">チーム</label>
+      <select id="teamSelect" onchange="renderRecord()"></select>
+      <button class="newbtn" onclick="addTeam()">＋ 新規チーム</button>
+    </div>
+    <div class="note">チームは A・B・C… から選択できます。</div>
+  </div>
+
+  <div id="recordArea"></div>
+</section>
+
+<section id="rank" class="hidden">
+  <div class="card">
+    <div class="score-title">🏆 現在の順位</div>
+    <div id="rankArea"></div>
+  </div>
+</section>
+</main>
+
+<script>
+const STORAGE_KEY='matsuichi_molkky_2026';
+const rounds=[1,2,3,4,5,6,7,8,9,10];
+let data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') || {teams:{}, current:'A'};
+
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
+
+function letters(){
+  return Object.keys(data.teams).sort((a,b)=>a.localeCompare(b,'ja'));
+}
+function addTeam(){
+  const existing=letters();
+  let code=String.fromCharCode(65);
+  while(existing.includes(code)) code=String.fromCharCode(code.charCodeAt(0)+1);
+  data.teams[code]={players:6,scores:{}};
+  data.current=code;
+  save(); renderAll();
+}
+function ensureInitial(){
+  if(letters().length===0) addTeam();
+}
+function renderSelect(){
+  const sel=document.getElementById('teamSelect');
+  sel.innerHTML=letters().map(t=>`<option value="${t}" ${t===data.current?'selected':''}>${t}</option>`).join('');
+  sel.value=data.current;
+}
+function renderRecord(){
+  const sel=document.getElementById('teamSelect');
+  if(sel && data.teams[sel.value]) data.current=sel.value;
+  const team=data.teams[data.current];
+  if(!team)return;
+  const cols=Array.from({length:team.players},(_,i)=>i+1);
+  let html=`<div class="card">
+    <div class="score-title">チーム ${data.current}</div>
+    <div class="row" style="margin-bottom:10px">
+      <label>人数</label>
+      <select onchange="setPlayers(this.value)">
+        ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${n===team.players?'selected':''}>${n}人</option>`).join('')}
+      </select>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>巡目</th>${cols.map(n=>`<th>${n}人目</th>`).join('')}</tr></thead>
+      <tbody>`;
+  for(const r of rounds){
+    html+=`<tr><th>${r}巡目</th>${cols.map(n=>{
+      const key=`${r}-${n}`;
+      const val=team.scores[key] ?? '';
+      return `<td><input class="score" type="number" inputmode="numeric" min="0" value="${val}" onchange="setScore(${r},${n},this.value)" onclick="this.select()"></td>`;
+    }).join('')}</tr>`;
+  }
+  html+=`</tbody></table></div>
+    <div class="total">合計点：${total(team)}</div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button class="secondary" onclick="clearTeam()">このチームの得点をクリア</button>
+    </div>
+  </div>`;
+  document.getElementById('recordArea').innerHTML=html;
+}
+function setPlayers(v){
+  data.teams[data.current].players=Number(v);
+  save(); renderAll();
+}
+function setScore(r,n,v){
+  const team=data.teams[data.current];
+  const key=`${r}-${n}`;
+  if(v==='') delete team.scores[key];
+  else team.scores[key]=Number(v);
+  save(); renderAll();
+}
+function total(team){return Object.values(team.scores).reduce((a,b)=>a+(Number(b)||0),0);}
+function clearTeam(){
+  if(confirm(`チーム ${data.current} の得点をすべて消しますか？`)){
+    data.teams[data.current].scores={}; save(); renderAll();
+  }
+}
+function renderRank(){
+  const arr=letters().map(t=>({team:t,total:total(data.teams[t])}))
+    .sort((a,b)=>b.total-a.total || a.team.localeCompare(b.team,'ja'));
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('rankArea').innerHTML=arr.length ? arr.map((x,i)=>`
+    <div class="teamrow">
+      <div><span class="rank">${medals[i]||((i+1)+'位')}</span>　チーム ${x.team}</div>
+      <strong style="font-size:20px">${x.total}点</strong>
+    </div>`).join('') : '<div class="empty">チームがありません。</div>';
+}
+function renderAll(){renderSelect();renderRecord();renderRank();}
+function showTab(tab){
+  document.getElementById('record').classList.toggle('hidden',tab!=='record');
+  document.getElementById('rank').classList.toggle('hidden',tab!=='rank');
+  document.getElementById('tabRecord').classList.toggle('active',tab==='record');
+  document.getElementById('tabRank').classList.toggle('active',tab==='rank');
+  if(tab==='rank')renderRank();
+}
+ensureInitial(); renderAll();
+</script>
+</body>
+</html>

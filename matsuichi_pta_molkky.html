@@ -100,9 +100,8 @@ th{background:var(--lg);color:var(--forest);font-size:.78rem;}
       <div class="card-head">チーム選択</div>
       <div class="row">
         <select id="teamSelect" onchange="renderRecord()"></select>
-        <button class="btn btn-green" onclick="addTeam()">＋ 新規チーム</button>
       </div>
-      <div class="note">チームは A・B・C… の順で自動的に追加されます。</div>
+      <div class="note">チームは A〜N から選べます。</div>
     </div>
     <div id="recordArea"></div>
   </section>
@@ -120,6 +119,7 @@ th{background:var(--lg);color:var(--forest);font-size:.78rem;}
 <script>
 const EVENTS_KEY='matsuichi_molkky_events_v1';
 const rounds=[1,2,3,4,5,6,7,8,9,10];
+const TEAM_LETTERS=Array.from({length:14},(_,i)=>String.fromCharCode(65+i)); // A〜N
 const params=new URLSearchParams(location.search);
 const EVENT_ID=params.get('event');
 
@@ -188,15 +188,14 @@ let data=null;
 function loadData(){data=JSON.parse(localStorage.getItem(dataKey(EVENT_ID))||'null')||{teams:{},current:'A'};}
 function save(){localStorage.setItem(dataKey(EVENT_ID),JSON.stringify(data));}
 function letters(){return Object.keys(data.teams).sort((a,b)=>a.localeCompare(b,'ja'));}
-function addTeam(){
-  const existing=letters();
-  let code=String.fromCharCode(65);
-  while(existing.includes(code)) code=String.fromCharCode(code.charCodeAt(0)+1);
-  data.teams[code]={players:6,scores:{}};
-  data.current=code;
-  save(); renderEventAll();
+function ensureInitial(){
+  let added=false;
+  TEAM_LETTERS.forEach(code=>{
+    if(!data.teams[code]){data.teams[code]={players:6,scores:{}};added=true;}
+  });
+  if(!data.current || !data.teams[data.current]) data.current='A';
+  if(added) save();
 }
-function ensureInitial(){if(letters().length===0) addTeam();}
 function renderSelect(){
   const sel=document.getElementById('teamSelect');
   sel.innerHTML=letters().map(t=>`<option value="${t}" ${t===data.current?'selected':''}>チーム ${t}</option>`).join('');

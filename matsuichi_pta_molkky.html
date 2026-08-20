@@ -83,7 +83,7 @@ th{background:var(--lg);color:var(--forest);font-size:.78rem;}
     <div class="card-head">＋ 新しいイベントを作成</div>
     <div class="row">
       <input class="inp" id="newEventName" type="text" placeholder="例：〇月〇日 モルック大会">
-      <button class="btn btn-green" onclick="createEvent()">作成してURLを発行</button>
+      <button class="btn btn-green" onclick="createMolkkyEvent()">作成してURLを発行</button>
     </div>
     <div class="note">イベントごとにデータが分かれるので、本番用と別に「テスト用」イベントを作って何度でも試せます。</div>
   </div>
@@ -149,7 +149,7 @@ function renderEventList(){
     </div>`;
   }).join('');
 }
-function createEvent(){
+function createMolkkyEvent(){
   const nameInput=document.getElementById('newEventName');
   const name=nameInput.value.trim() || `モルック大会 ${new Date().toLocaleDateString('ja-JP')}`;
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);

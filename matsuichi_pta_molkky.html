@@ -232,7 +232,7 @@ function renderRecord(){
     }).join('')}</tr>`;
   }
   html+=`</tbody></table></div>
-    <div class="total">合計点：${total(team)} 点</div>
+    <div class="total">合計点：${total(team)*20} 点</div>
     <div class="row" style="justify-content:flex-end;margin-top:12px">
       <button class="btn btn-ghost btn-sm" onclick="clearTeam()">このチームの得点をクリア</button>
     </div>
@@ -269,7 +269,7 @@ function renderRank(){
   document.getElementById('rankArea').innerHTML=arr.length ? arr.map((x,i)=>`
     <div class="teamrow">
       <div><span class="rank">${medals[i]||((i+1)+'位')}</span>　チーム ${x.team}</div>
-      <span class="stat-n">${x.total}点</span>
+      <span class="stat-n">${x.total*20}点</span>
     </div>`).join('') : '<div class="empty">チームがありません。</div>';
 }
 async function showTab(tab){

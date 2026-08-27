@@ -368,7 +368,8 @@ function normalizeName(s) {
 }
 
 // 二重登録の判定キー
-// ・松一小PTA（役職ベース／index.html）: 学年・クラス（cls）＋役職（role）＋子供の名前 が同じなら同一人物とみなす
+// ・松一小PTA（役職ベース／index.html）: 役職（role）＋保護者名（name） が同じなら同一人物とみなす
+//   （クラス・子供の名前は問わない＝兄弟姉妹で別クラス・別の子の名前で登録しても同一人物として重複扱いにする）
 //   （保護者名の表記ゆれ「林 里美」「林里美」は無視する）
 // ・サポート運営（support-checkin.html）: 役職が無いのでクラス＋保護者名＋子供の名前で判定（名前は表記ゆれを無視）
 // ・西武文理サポーター（isSeibu）: 生徒名＋保護者名で判定（表記ゆれを無視）
@@ -382,9 +383,8 @@ function isDuplicateRecord(existing, incoming, isSeibu, isSupport) {
       && normalizeName(existing.name) === normalizeName(incoming.name)
       && normalizeName(existing.childName) === normalizeName(incoming.childName);
   }
-  return (existing.cls || '') === (incoming.cls || '')
-    && (existing.role || '') === (incoming.role || '')
-    && normalizeName(existing.childName) === normalizeName(incoming.childName);
+  return (existing.role || '') === (incoming.role || '')
+    && normalizeName(existing.name) === normalizeName(incoming.name);
 }
 
 async function handleAPI(request, env, url) {
@@ -497,7 +497,7 @@ async function handleAPI(request, env, url) {
         ? `${normalizeName(r.studentName)}::${normalizeName(r.parent)}`
         : isSupport
           ? `${r.cls || ''}::${normalizeName(r.name)}::${normalizeName(r.childName)}`
-          : `${r.cls || ''}::${r.role || ''}::${normalizeName(r.childName)}`;
+          : `${r.role || ''}::${normalizeName(r.name)}`;
       const latestByKey = new Map();
       records.forEach(r => {
         const k = keyOf(r);

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>本部腕章 貸出・返却｜松一小PTA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#2f6b3f; --g-d:#1d4a2a; --g-l:#e5eee1; --bg:#f3f6f1; --ink:#1e2a21; --mute:#667368;
+  --line:#d3ddd0; --ret:#b0611a; --ret-d:#8a4a12; --ret-l:#fbeddc; --band:#e9c646; --err:#b3261e; --card:#fff;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Noto Sans JP',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);
+  -webkit-tap-highlight-color:transparent;padding-bottom:calc(24px + env(safe-area-inset-bottom));line-height:1.6}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--band);outline-offset:2px}
+
+/* topbar + 腕章ストライプ */
+.topbar{background:var(--g-d);color:#fff;position:sticky;top:0;z-index:10;padding-top:env(safe-area-inset-top)}
+.topbar-in{display:flex;align-items:center;gap:12px;padding:12px 16px 10px;max-width:640px;margin:0 auto}
+.armband-mark{flex:none;background:var(--band);color:var(--g-d);font-weight:900;font-size:13px;padding:4px 10px;border-radius:3px;letter-spacing:.1em}
+.topbar h1{font-size:16px;margin:0;font-weight:700;line-height:1.3}
+.topbar .sub{font-size:11px;opacity:.75}
+.net{margin-left:auto;font-size:11px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.15);white-space:nowrap}
+.net.off{background:var(--ret)}
+.tabs{display:flex;max-width:640px;margin:0 auto}
+.tab{flex:1;border:0;background:none;color:rgba(255,255,255,.7);padding:10px 0 12px;font-size:14px;font-weight:700;border-bottom:3px solid transparent}
+.tab.on{color:#fff;border-bottom-color:var(--band)}
+
+main{max-width:640px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 16px;margin-bottom:14px}
+h2{font-size:18px;margin:0 0 4px}
+.hint{color:var(--mute);font-size:13px;margin:0 0 14px}
+
+/* ステップ表示 */
+.steps{display:flex;gap:4px;margin:0 0 14px;padding:0;list-style:none}
+.steps li{flex:1;font-size:11px;color:var(--mute);text-align:center;padding-top:8px;border-top:4px solid var(--line)}
+.steps li.done{border-top-color:var(--g);color:var(--g)}
+.steps li.now{border-top-color:var(--band);color:var(--ink);font-weight:700}
+.chosen{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chip{font-size:13px;background:var(--g-l);color:var(--g-d);padding:3px 10px;border-radius:99px;font-weight:500}
+.chip.ret{background:var(--ret-l);color:var(--ret-d)}
+
+/* 貸出/返却 大ボタン */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode{border:0;border-radius:16px;color:#fff;padding:28px 8px 22px;font-size:26px;font-weight:900;letter-spacing:.15em;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:150px;justify-content:center}
+.mode small{font-size:12px;font-weight:500;letter-spacing:0;opacity:.9}
+.mode.lend{background:var(--g)}
+.mode.ret{background:var(--ret)}
+.mode:active{transform:scale(.98)}
+.mode .ico{width:44px;height:14px;background:var(--band);border-radius:2px;margin-bottom:6px}
+.mode.ret .ico{background:#fff;opacity:.9}
+
+.shortcut{display:block;width:100%;text-align:left;margin-top:14px;border:2px solid var(--ret);background:var(--ret-l);color:var(--ret-d);border-radius:12px;padding:12px 14px;font-size:15px;font-weight:700}
+.shortcut span{display:block;font-size:12px;font-weight:400}
+
+/* 選択グリッド */
+.group-label{font-size:12px;color:var(--mute);margin:12px 0 6px}
+.group-label:first-child{margin-top:0}
+.grid{display:grid;gap:8px}
+.grid.c2{grid-template-columns:repeat(2,1fr)}
+.grid.c3{grid-template-columns:repeat(3,1fr)}
+.opt{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:14px 6px;font-size:15px;font-weight:700;color:var(--ink);min-height:52px}
+.opt:active,.opt.sel{background:var(--g);border-color:var(--g);color:#fff}
+.grade-row{display:grid;grid-template-columns:44px repeat(3,1fr);gap:8px;align-items:center;margin-bottom:8px}
+.grade-row b{font-size:13px;color:var(--mute);text-align:center}
+
+input[type=text]{width:100%;font-size:18px;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit}
+.cands{display:grid;gap:8px;margin-bottom:14px}
+.cand{border:1.5px solid var(--ret);background:var(--ret-l);color:var(--ret-d);border-radius:10px;padding:12px 14px;font-size:16px;font-weight:700;text-align:left}
+.cand span{font-size:12px;font-weight:400;margin-left:8px}
+
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:16px;font-size:17px;font-weight:700;color:#fff;background:var(--g);margin-top:14px}
+.btn.ret{background:var(--ret)}
+.btn.sub{background:none;color:var(--mute);border:1.5px solid var(--line);font-size:14px;padding:12px;margin-top:10px}
+.btn:disabled{opacity:.45}
+
+.warn{border:2px solid var(--err);background:#fdecea;color:var(--err);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:14px}
+.warn .btn{background:var(--err);font-size:15px;padding:12px;margin-top:10px}
+
+/* 完了 */
+.done{text-align:center;padding:32px 16px}
+.done .mark{width:84px;height:84px;border-radius:50%;background:var(--g);color:#fff;font-size:44px;line-height:84px;margin:0 auto 14px;animation:pop .35s ease-out}
+.done.ret .mark{background:var(--ret)}
+.done h2{font-size:22px}
+.done .who{font-size:15px;margin:6px 0 0}
+.done .note{font-size:13px;color:var(--mute);margin-top:14px}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.done .mark{animation:none}}
+
+/* 管理 */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.stat b{display:block;font-size:30px;font-weight:900;line-height:1.2}
+.stat.l b{color:var(--g)} .stat.r b{color:var(--ret)}
+.stat span{font-size:12px;color:var(--mute)}
+.row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:0}
+.row .nm{font-weight:700}
+.row .meta{font-size:12px;color:var(--mute)}
+.row .grow{flex:1;min-width:0}
+.tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;color:#fff;background:var(--g);flex:none}
+.tag.return{background:var(--ret)}
+.mini{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;color:var(--ink);flex:none}
+.mini.del{color:var(--err)}
+.empty{color:var(--mute);font-size:14px;text-align:center;padding:12px 0}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tools .btn{margin-top:0;font-size:14px;padding:12px}
+.qr{text-align:center}
+.qr img{width:220px;height:220px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.qr .url{font-size:11px;color:var(--mute);word-break:break-all;margin-top:6px}
+.pending{font-size:12px;color:var(--ret-d);background:var(--ret-l);border-radius:8px;padding:8px 12px;margin-bottom:14px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="armband-mark">本部</div>
+    <div>
+      <h1>腕章 貸出・返却</h1>
+      <div class="sub">松一小PTA 運動会</div>
+    </div>
+    <div class="net" id="net">接続中…</div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="entry">受付</button>
+    <button class="tab" data-tab="admin">貸出状況</button>
+  </div>
+</header>
+
+<main>
+  <section id="entry"></section>
+  <section id="admin" class="hidden"></section>
+</main>
+
+<script>
+/* ===== 設定 ===== */
+const API = '/armband/records';
+const EVENT = new URLSearchParams(location.search).get('event') || 'undokai';
+
+const ROLES = [
+  { group: '本部役員', items: ['会長', '副会長', '監事'] },
+  { group: '幹事', items: ['幹事（110番）', '幹事（人権）', '幹事（人権・給食）', '幹事（広報）', '幹事（サポート）'] },
+  { group: '委員', items: ['地区委員'] },
+  { group: '学校', items: ['校長・教頭・教務主任'], noClass: true },
+  { group: 'その他', items: ['その他'] },
+];
+const NO_CLASS_ROLES = ROLES.filter(g => g.noClass).flatMap(g => g.items);
+const GRADES = [1, 2, 3, 4, 5, 6];
+const CLASS_PER_GRADE = 3;
+
+/* ===== 状態 ===== */
+let records = [];           // サーバー＋未送信分
+let online = true;
+const st = { step: 'mode', mode: null, role: null, cls: null, name: '', warn: null };
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s || '').replace(/[\s\u3000]/g, '');
+const keyOf = (role, name) => role + '|' + norm(name);
+const modeLabel = m => m === 'lend' ? '貸出' : '返却';
+const fmt = ts => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+/* ===== ローカル保存（オフライン対策） ===== */
+const LS = k => `armband_${EVENT}_${k}`;
+function lsGet(k, d) { try { return JSON.parse(localStorage.getItem(LS(k))) ?? d; } catch { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(LS(k), JSON.stringify(v)); } catch {} }
+const getPending = () => lsGet('pending', []);
+const getMe = () => { try { return JSON.parse(localStorage.getItem('armband_me')); } catch { return null; } };
+const setMe = v => { try { localStorage.setItem('armband_me', JSON.stringify(v)); } catch {} };
+
+/* ===== API ===== */
+async function load() {
+  try {
+    const r = await fetch(`${API}?event=${encodeURIComponent(EVENT)}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    const server = await r.json();
+    lsSet('cache', server);
+    setOnline(true);
+    await flush(server);
+    mergeRecords(server);
+  } catch {
+    setOnline(false);
+    mergeRecords(lsGet('cache', []));
+  }
+  render();
+}
+function mergeRecords(server) {
+  const ids = new Set(server.map(r => r.id));
+  records = server.concat(getPending().filter(p => !ids.has(p.id))).sort((a, b) => a.ts - b.ts);
+}
+async function post(rec) {
+  const r = await fetch(`${API}?event=${encodeURIComponent(EVENT)}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec)
+  });
+  if (!r.ok) throw new Error(r.status);
+}
+async function flush(server) {
+  const ids = new Set((server || []).map(r => r.id));
+  const left = [];
+  for (const p of getPending()) {
+    if (ids.has(p.id)) continue;
+    try { await post(p); } catch { left.push(p); }
+  }
+  lsSet('pending', left);
+}
+async function removeRecord(id) {
+  try {
+    const r = await fetch(`${API}?event=${encodeURIComponent(EVENT)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!r.ok) throw 0;
+  } catch { alert('削除できませんでした。通信状況を確認してもう一度お試しください。'); return; }
+  lsSet('pending', getPending().filter(p => p.id !== id));
+  await load();
+}
+function setOnline(v) {
+  online = v;
+  const n = $('#net');
+  const pend = getPending().length;
+  n.textContent = v ? (pend ? `未送信 ${pend}件` : 'オンライン') : 'オフライン';
+  n.classList.toggle('off', !v || pend > 0);
+}
+window.addEventListener('online', load);
+
+/* ===== 貸出状況の計算 ===== */
+function lentMap() {
+  const m = new Map();
+  for (const r of records) {
+    const k = keyOf(r.role, r.name);
+    if (r.type === 'lend') m.set(k, r); else m.delete(k);
+  }
+  return m;
+}
+
+/* ===== 受付フロー ===== */
+const STEP_ORDER = ['mode', 'role', 'cls', 'name'];
+const STEP_NAMES = { mode: '貸出・返却', role: '役職', cls: 'クラス', name: '名前' };
+
+function stepsBar() {
+  const now = STEP_ORDER.indexOf(st.step);
+  return `<ol class="steps">${STEP_ORDER.map((s, i) =>
+    `<li class="${i < now ? 'done' : i === now ? 'now' : ''}">${i + 1} ${STEP_NAMES[s]}</li>`).join('')}</ol>`;
+}
+function chosenChips() {
+  const c = [];
+  if (st.mode) c.push(`<span class="chip ${st.mode === 'return' ? 'ret' : ''}">${modeLabel(st.mode)}</span>`);
+  if (st.role) c.push(`<span class="chip">${esc(st.role)}</span>`);
+  if (st.cls) c.push(`<span class="chip">${esc(st.cls)}</span>`);
+  return c.length ? `<div class="chosen">${c.join('')}</div>` : '';
+}
+const backBtn = () => `<button class="btn sub" data-act="back">ひとつ前に戻る</button>`;
+
+function renderEntry() {
+  const el = $('#entry');
+  if (st.step === 'done') return renderDone(el);
+
+  let body = '';
+  if (st.step === 'mode') {
+    const me = getMe();
+    const myLend = me && lentMap().get(keyOf(me.role, me.name));
+    body = `
+      <h2>どちらの手続きですか</h2>
+      <p class="hint">本部役員用の腕章の受け取り・返却を記録します</p>
+      <div class="modes">
+        <button class="mode lend" data-mode="lend"><i class="ico"></i>貸出<small>腕章を受け取る</small></button>
+        <button class="mode ret" data-mode="return"><i class="ico"></i>返却<small>腕章を返す</small></button>
+      </div>
+      ${myLend ? `<button class="shortcut" data-act="quickreturn">${esc(myLend.name)}さんの腕章を返却する
+        <span>${esc(myLend.role)}${myLend.cls ? '・' + esc(myLend.cls) : ''}／${fmt(myLend.ts)} に貸出</span></button>` : ''}`;
+  }
+
+  if (st.step === 'role') {
+    body = `<h2>役職を選んでください</h2><p class="hint">&nbsp;</p>` +
+      ROLES.map(g => `<div class="group-label">${esc(g.group)}</div>
+        <div class="grid c2">${g.items.map(r =>
+          `<button class="opt ${st.role === r ? 'sel' : ''}" data-role="${esc(r)}">${esc(r)}</button>`).join('')}</div>`).join('') +
+      backBtn();
+  }
+
+  if (st.step === 'cls') {
+    body = `<h2>お子さんのクラスを選んでください</h2>
+      <p class="hint">きょうだいがいる場合は、どちらか一方のクラスで大丈夫です</p>` +
+      GRADES.map(g => `<div class="grade-row"><b>${g}年</b>${
+        Array.from({ length: CLASS_PER_GRADE }, (_, i) => `${g}-${i + 1}`).map(c =>
+          `<button class="opt ${st.cls === c ? 'sel' : ''}" data-cls="${c}">${c}</button>`).join('')}</div>`).join('') +
+      `<div class="grid"><button class="opt ${st.cls === 'なかよし' ? 'sel' : ''}" data-cls="なかよし">なかよし</button></div>` +
+      backBtn();
+  }
+
+  if (st.step === 'name') {
+    const isRet = st.mode === 'return';
+    let cands = '';
+    if (isRet) {
+      const list = [...lentMap().values()].filter(r => r.role === st.role && (!st.cls || r.cls === st.cls));
+      if (list.length) cands = `<p class="hint" style="margin-bottom:8px">貸出中の方（タップで返却）</p>
+        <div class="cands">${list.map(r =>
+          `<button class="cand" data-cand="${esc(r.name)}">${esc(r.name)}<span>${fmt(r.ts)} 貸出</span></button>`).join('')}</div>
+        <p class="hint" style="margin-bottom:8px">一覧にない場合は名前を入力</p>`;
+    }
+    const me = getMe();
+    const val = st.name || (me && me.role === st.role ? me.name : '');
+    body = `<h2>保護者のお名前</h2>${isRet ? '' : '<p class="hint">フルネームで入力してください</p>'}
+      ${cands}
+      <input type="text" id="nameInput" placeholder="例：松山 花子" autocomplete="name" value="${esc(val)}">
+      ${st.warn ? `<div class="warn">${esc(st.warn)}<button class="btn" data-act="force">このまま${modeLabel(st.mode)}を記録する</button></div>` : ''}
+      <button class="btn ${isRet ? 'ret' : ''}" data-act="submit">${modeLabel(st.mode)}を記録する</button>
+      ${backBtn()}`;
+  }
+
+  el.innerHTML = `<div class="card">${stepsBar()}${chosenChips()}${body}</div>`;
+  if (st.step === 'name') {
+    const inp = $('#nameInput');
+    inp.addEventListener('input', () => { st.name = inp.value; if (st.warn) { st.warn = null; renderEntry(); $('#nameInput').focus(); } });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(false); });
+    st.name = inp.value;
+  }
+}
+
+function renderDone(el) {
+  const r = st.last;
+  const isRet = r.type === 'return';
+  el.innerHTML = `<div class="card done ${isRet ? 'ret' : ''}">
+    <div class="mark">✓</div>
+    <h2>${modeLabel(r.type)}を記録しました</h2>
+    <p class="who"><b>${esc(r.name)}</b> さん（${esc(r.role)}${r.cls ? '・' + esc(r.cls) : ''}）</p>
+    <p class="note">${isRet ? 'ご協力ありがとうございました。' : '運動会の終了後、本部テントへ腕章を返却し、もう一度QRを読み込んで「返却」を記録してください。'}
+    ${st.queued ? '<br>※通信が不安定なため、この端末に一時保存しました。つながり次第自動で送信します。' : ''}</p>
+    <button class="btn sub" data-act="reset">最初の画面に戻る</button>
+  </div>`;
+}
+
+function back() {
+  st.warn = null;
+  if (st.step === 'name') st.step = NO_CLASS_ROLES.includes(st.role) ? 'role' : 'cls';
+  else if (st.step === 'cls') st.step = 'role';
+  else if (st.step === 'role') st.step = 'mode';
+  render();
+}
+function reset() { Object.assign(st, { step: 'mode', mode: null, role: null, cls: null, name: '', warn: null, last: null, queued: false }); render(); }
+
+async function submit(force) {
+  const name = (st.name || '').trim();
+  if (!name) { $('#nameInput').focus(); return; }
+  const cur = lentMap().get(keyOf(st.role, name));
+  if (!force) {
+    if (st.mode === 'lend' && cur) { st.warn = `${name}さんは ${fmt(cur.ts)} から貸出中になっています。`; return renderEntry(); }
+    if (st.mode === 'return' && !cur) { st.warn = `${name}さん（${st.role}）の貸出記録が見つかりません。名前や役職を確認してください。`; return renderEntry(); }
+  }
+  const rec = { id: newId(), type: st.mode, role: st.role, cls: st.cls || '', name, ts: Date.now() };
+  records.push(rec);
+  st.queued = false;
+  try { await post(rec); setOnline(true); }
+  catch { lsSet('pending', [...getPending(), rec]); st.queued = true; setOnline(false); }
+  setMe({ role: rec.role, cls: rec.cls, name: rec.name });
+  st.last = rec; st.step = 'done'; st.warn = null;
+  render();
+}
+
+function quickReturn() {
+  const me = getMe();
+  const r = me && lentMap().get(keyOf(me.role, me.name));
+  if (!r) return;
+  Object.assign(st, { mode: 'return', role: r.role, cls: r.cls, name: r.name, step: 'name' });
+  submit(true);
+}
+
+/* ===== 管理（貸出状況） ===== */
+function renderAdmin() {
+  const lent = [...lentMap().values()].sort((a, b) => a.ts - b.ts);
+  const people = new Set(records.map(r => keyOf(r.role, r.name)));
+  const returned = people.size - lent.length;
+  const pend = getPending().length;
+  const url = location.origin + location.pathname + (EVENT !== 'undokai' ? `?event=${encodeURIComponent(EVENT)}` : '');
+  const hist = [...records].reverse();
+
+  $('#admin').innerHTML = `
+    ${pend ? `<div class="pending">この端末に未送信の記録が ${pend} 件あります（通信が戻ると自動送信）</div>` : ''}
+    <div class="stats">
+      <div class="stat l"><b>${lent.length}</b><span>貸出中</span></div>
+      <div class="stat r"><b>${returned}</b><span>返却済み</span></div>
+    </div>
+
+    <div class="card">
+      <h2>貸出中の腕章</h2>
+      ${lent.length ? lent.map(r => `<div class="row">
+        <div class="grow"><div class="nm">${esc(r.name)}</div>
+        <div class="meta">${esc(r.role)}${r.cls ? '・' + esc(r.cls) : ''}／${fmt(r.ts)} 貸出</div></div>
+        <button class="mini" data-adminret="${esc(r.id)}">返却にする</button></div>`).join('')
+        : '<p class="empty">貸出中の腕章はありません</p>'}
+    </div>
+
+    <div class="card">
+      <h2>受付用QRコード</h2>
+      <p class="hint">印刷して本部テントに掲示してください</p>
+      <div class="qr"><img alt="受付ページのQRコード" src="https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=8&data=${encodeURIComponent(url)}">
+      <div class="url">${esc(url)}</div></div>
+    </div>
+
+    <div class="card">
+      <h2>記録の履歴</h2>
+      <div class="tools" style="margin:10px 0 6px">
+        <button class="btn" data-act="csv">CSVを保存</button>
+        <button class="btn sub" style="margin:0" data-act="reload">最新にする</button>
+      </div>
+      ${hist.length ? hist.map(r => `<div class="row">
+        <span class="tag ${r.type}">${modeLabel(r.type)}</span>
+        <div class="grow"><div class="nm">${esc(r.name)}</div>
+        <div class="meta">${esc(r.role)}${r.cls ? '・' + esc(r.cls) : ''}／${fmt(r.ts)}</div></div>
+        <button class="mini del" data-del="${esc(r.id)}">削除</button></div>`).join('')
+        : '<p class="empty">まだ記録がありません</p>'}
+    </div>`;
+}
+
+async function adminReturn(id) {
+  const src = records.find(r => r.id === id);
+  if (!src || !confirm(`${src.name}さんの腕章を返却済みにしますか？`)) return;
+  const rec = { id: newId(), type: 'return', role: src.role, cls: src.cls, name: src.name, ts: Date.now() };
+  records.push(rec);
+  try { await post(rec); } catch { lsSet('pending', [...getPending(), rec]); }
+  await load();
+}
+
+function downloadCSV() {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const d = ts => { const t = new Date(ts); return `${t.getFullYear()}/${t.getMonth() + 1}/${t.getDate()} ${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}`; };
+  const lines = [['日時', '区分', '役職', 'クラス', '名前'].map(q).join(',')]
+    .concat(records.map(r => [d(r.ts), modeLabel(r.type), r.role, r.cls, r.name].map(q).join(',')));
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `腕章貸出_${EVENT}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ===== 描画・イベント ===== */
+let tab = 'entry';
+function render() {
+  $('#entry').classList.toggle('hidden', tab !== 'entry');
+  $('#admin').classList.toggle('hidden', tab !== 'admin');
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+  if (tab === 'entry') renderEntry(); else renderAdmin();
+  setOnline(online);
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const d = b.dataset;
+  if (d.tab) { tab = d.tab; if (tab === 'admin') load(); render(); window.scrollTo(0, 0); return; }
+  if (d.mode) { st.mode = d.mode; st.step = 'role'; }
+  else if (d.role) { st.role = d.role; st.cls = null; st.step = NO_CLASS_ROLES.includes(d.role) ? 'name' : 'cls'; }
+  else if (d.cls) { st.cls = d.cls; st.step = 'name'; }
+  else if (d.cand) { st.name = d.cand; return submit(true); }
+  else if (d.adminret) return adminReturn(d.adminret);
+  else if (d.del) { if (confirm('この記録を削除しますか？（元に戻せません）')) removeRecord(d.del); return; }
+  else if (d.act === 'back') return back();
+  else if (d.act === 'reset') return reset();
+  else if (d.act === 'submit') return submit(false);
+  else if (d.act === 'force') return submit(true);
+  else if (d.act === 'quickreturn') return quickReturn();
+  else if (d.act === 'csv') return downloadCSV();
+  else if (d.act === 'reload') return load();
+  else return;
+  st.warn = null;
+  render();
+  window.scrollTo(0, 0);
+});
+
+setInterval(() => { if (tab === 'admin' || getPending().length) load(); }, 30000);
+load();
+</script>
+</body>
+</html>

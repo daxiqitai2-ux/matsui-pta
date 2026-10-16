@@ -119,6 +119,56 @@ input[type=text]{width:100%;font-size:18px;padding:14px;border:1.5px solid var(-
 main{position:relative;z-index:1}
 .done .mascot{height:90px;display:block;margin:0 auto 8px}
 @media (max-width:400px){.bg-mascot{height:150px}}
+
+/* ===== スマホ向け調整 ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button{touch-action:manipulation}
+.opt .sub-l{display:block;font-size:11px;font-weight:500;color:var(--mute);line-height:1.2}
+.opt.sel .sub-l{color:var(--g-d)}
+.grid.c2 > .opt:last-child:nth-child(odd){grid-column:1/-1}
+.row .meta .t{display:block}
+@media (max-width:600px){
+  body{font-size:16px}
+  .bg-mascot{display:none}
+  .topbar-in{padding:10px 14px 8px;gap:10px}
+  .topbar h1{font-size:17px}
+  .topbar .sub{font-size:12px}
+  .top-mascot{height:38px}
+  .net{font-size:12px;padding:3px 9px}
+  .tab{font-size:16px;padding:12px 0 13px}
+  main{padding:12px 12px 20px}
+  .card{padding:18px 14px;border-radius:16px}
+  h2{font-size:20px;line-height:1.4}
+  .hint{font-size:14px}
+  .steps{gap:3px}
+  .steps li{font-size:12px;white-space:nowrap;padding-top:7px;letter-spacing:-.02em}
+  .chip{font-size:14px;padding:4px 12px}
+  .mode{min-height:170px;font-size:30px}
+  .mode small{font-size:13px}
+  .shortcut{font-size:16px;padding:14px 16px}
+  .shortcut span{font-size:13px}
+  .group-label{font-size:13px;font-weight:700;margin:16px 0 8px}
+  .opt{font-size:17px;min-height:58px;padding:10px 6px;line-height:1.3}
+  .grade-row{grid-template-columns:40px repeat(3,1fr)}
+  .grade-row b{font-size:15px;color:var(--ink)}
+  .cand{font-size:18px;padding:14px 16px}
+  .cand span{display:block;margin:2px 0 0;font-size:13px}
+  .btn{font-size:18px;padding:17px}
+  .btn.sub{font-size:15px;padding:14px}
+  .warn{font-size:15px}
+  .done .who{font-size:17px}
+  .done .note{font-size:14px}
+  .stat b{font-size:34px}
+  .stat span{font-size:14px}
+  .row{font-size:16px;padding:12px 0;gap:10px}
+  .row .meta{font-size:13px;line-height:1.5}
+  .tag{font-size:12px;padding:3px 8px}
+  .mini{font-size:14px;min-height:42px;padding:8px 12px;border-radius:10px}
+  .tools .btn{font-size:15px;padding:14px}
+  .qr img{width:min(240px,70vw);height:auto;aspect-ratio:1}
+  .qr .url{font-size:12px}
+  .pending{font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -264,6 +314,11 @@ function chosenChips() {
   if (st.cls) c.push(`<span class="chip">${esc(st.cls)}</span>`);
   return c.length ? `<div class="chosen">${c.join('')}</div>` : '';
 }
+// 「幹事（人権・給食）」→ 小さく「幹事」＋大きく「人権・給食」（スマホで折り返さないように）
+function roleLabel(r) {
+  const m = r.match(/^(.+?)（(.+)）$/);
+  return m ? `<span class="sub-l">${esc(m[1])}</span>${esc(m[2])}` : esc(r);
+}
 const backBtn = () => `<button class="btn sub" data-act="back">ひとつ前に戻る</button>`;
 
 function renderEntry() {
@@ -289,7 +344,7 @@ function renderEntry() {
     body = `<h2>役職を選んでください</h2><p class="hint">&nbsp;</p>` +
       ROLES.map(g => `<div class="group-label">${esc(g.group)}</div>
         <div class="grid c2">${g.items.map(r =>
-          `<button class="opt ${st.role === r ? 'sel' : ''}" data-role="${esc(r)}">${esc(r)}</button>`).join('')}</div>`).join('') +
+          `<button class="opt ${st.role === r ? 'sel' : ''}" data-role="${esc(r)}">${roleLabel(r)}</button>`).join('')}</div>`).join('') +
       backBtn();
   }
 
@@ -401,7 +456,7 @@ function renderAdmin() {
       <h2>貸出中の腕章</h2>
       ${lent.length ? lent.map(r => `<div class="row">
         <div class="grow"><div class="nm">${esc(r.name)}</div>
-        <div class="meta">${esc(r.role)}${r.cls ? '・' + esc(r.cls) : ''}／${fmt(r.ts)} 貸出</div></div>
+        <div class="meta">${esc(r.role)}${r.cls ? '・' + esc(r.cls) : ''}<span class="t">${fmt(r.ts)} 貸出</span></div></div>
         <button class="mini" data-adminret="${esc(r.id)}">返却にする</button></div>`).join('')
         : '<p class="empty">貸出中の腕章はありません</p>'}
     </div>
@@ -422,7 +477,7 @@ function renderAdmin() {
       ${hist.length ? hist.map(r => `<div class="row">
         <span class="tag ${r.type}">${modeLabel(r.type)}</span>
         <div class="grow"><div class="nm">${esc(r.name)}</div>
-        <div class="meta">${esc(r.role)}${r.cls ? '・' + esc(r.cls) : ''}／${fmt(r.ts)}</div></div>
+        <div class="meta">${esc(r.role)}${r.cls ? '・' + esc(r.cls) : ''}<span class="t">${fmt(r.ts)}</span></div></div>
         <button class="mini del" data-del="${esc(r.id)}">削除</button></div>`).join('')
         : '<p class="empty">まだ記録がありません</p>'}
     </div>`;

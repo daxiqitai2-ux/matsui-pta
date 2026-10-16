@@ -207,10 +207,11 @@ const EVENT = new URLSearchParams(location.search).get('event') || 'undokai';
 
 const ROLES = [
   { group: '本部役員', items: ['会長', '副会長', '監事'] },
-  { group: '幹事', items: ['幹事（110番）', '幹事（人権）', '幹事（人権・給食）', '幹事（広報）', '幹事（サポート）'] },
+  { group: '幹事', items: ['幹事（110番）', '幹事（人権）', '幹事（人権・給食）', '幹事（広報）', '幹事（サポート）', '幹事（会計）', '幹事（まついちまつり）'] },
   { group: '委員', items: ['地区委員'] },
+  { group: '学年委員', items: ['学年委員'] },
+  { group: '市子連', items: ['市子連'] },
   { group: '学校', items: ['校長・教頭・教務主任'], noClass: true },
-  { group: 'その他', items: ['その他'] },
 ];
 const NO_CLASS_ROLES = ROLES.filter(g => g.noClass).flatMap(g => g.items);
 const GRADES = [1, 2, 3, 4, 5, 6];

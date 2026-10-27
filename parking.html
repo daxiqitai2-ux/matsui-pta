@@ -211,7 +211,7 @@ label.fl small{font-weight:400}
     <div class="net" id="net">接続中…</div>
     <img class="top-mascot mascot-img" alt="リックとミント">
   </div>
-  <div class="tabs">
+  <div class="tabs hidden">
     <button class="tab on" data-tab="entry">申し込み</button>
     <button class="tab" data-tab="admin">申込状況</button>
   </div>
@@ -228,7 +228,9 @@ document.querySelectorAll('.mascot-img').forEach(i => i.src = MASCOT);
 /* ===== 設定 ===== */
 const API = '/api/parking';
 const EVENT = new URLSearchParams(location.search).get('event') || '2gakki';
+const KEY = new URLSearchParams(location.search).get('key') || '';
 const Q = `?event=${encodeURIComponent(EVENT)}`;
+const QK = Q + (KEY ? `&key=${encodeURIComponent(KEY)}` : '');
 const ROLES = [
   { group: '本部役員', items: ['会長', '副会長', '監事'] },
   { group: '幹事', items: ['幹事（110番）', '幹事（人権）', '幹事（人権・給食）', '幹事（広報）', '幹事（サポーター）', '幹事（会計）', '幹事（まついちまつり）'] },
@@ -239,7 +241,7 @@ const GRADES = [1, 2, 3, 4, 5, 6];
 const CLASS_PER_GRADE = 3;
 
 /* ===== 状態 ===== */
-let days = [], records = [], tab = 'entry';
+let days = [], records = [], tab = 'entry', isHost = false, mineRec = null;
 const st = { step: 'day', day: null, role: null, cls: null, name: '', car: '', warn: null, last: null, busy: false };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -248,27 +250,27 @@ const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2
 const fmt = ts => { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
 const dayOf = id => days.find(d => d.id === id);
 const dayNo = id => days.findIndex(d => d.id === id) + 1;
-const usedOf = id => records.filter(r => r.day === id).length;
+const usedOf = id => isHost ? records.filter(r => r.day === id).length : (dayOf(id)?.used || 0);
 const leftOf = d => Math.max(0, d.cap - usedOf(d.id));
 const MY = 'parking_mine_' + EVENT;
 const getMine = () => { try { return JSON.parse(localStorage.getItem(MY)); } catch { return null; } };
 const setMine = v => { try { v ? localStorage.setItem(MY, JSON.stringify(v)) : localStorage.removeItem(MY); } catch {} };
 // この端末の申込（サーバーで取消済みなら消す）
-function myRec() {
-  const m = getMine();
-  if (!m) return null;
-  const r = records.find(x => x.id === m.id);
-  if (!r) { setMine(null); return null; }
-  return r;
-}
+function myRec() { return mineRec; }
 
 /* ===== API ===== */
 async function load() {
   try {
-    const r = await fetch(API + Q, { cache: 'no-store' });
+    const m = getMine();
+    const r = await fetch(API + QK + (m ? `&mine=${encodeURIComponent(m.id)}` : ''), { cache: 'no-store' });
     if (!r.ok) throw 0;
     const j = await r.json();
-    days = j.days; records = j.records;
+    isHost = !!j.host;
+    days = j.days; records = j.records || [];
+    mineRec = isHost ? (m && records.find(x => x.id === m.id)) || null : j.mine || null;
+    if (m && !mineRec) setMine(null);   // 取り消し済み
+    if (!isHost) tab = 'entry';
+    document.querySelector('.tabs').classList.toggle('hidden', !isHost);
     setOnline(true);
   } catch { setOnline(false); }
   render();
@@ -383,14 +385,14 @@ async function submit() {
   if (!name) { $('#nameInput').focus(); return; }
   // 端末内の一覧で先にチェック
   const dup = records.find(r => norm(r.name) === norm(name));
-  if (dup) { st.warn = dupMsg(dup); return renderEntry(); }
+  if (dup) { st.warn = dupMsg(name, dup.day); return renderEntry(); }
   st.busy = true; st.warn = null; renderEntry();
   const rec = { id: newId(), day: st.day, role: st.role, cls: st.cls || '', name, car: st.car.trim() };
   try {
     const r = await fetch(API + Q, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) });
     const j = await r.json().catch(() => ({}));
     st.busy = false;
-    if (r.status === 409 && j.error === 'dup') { st.warn = dupMsg(j.rec); await load(); return; }
+    if (r.status === 409 && j.error === 'dup') { st.warn = dupMsg(name, j.day); await load(); return; }
     if (r.status === 409 && j.error === 'full') {
       st.warn = `<b>${dayNo(st.day)}日目は満車になりました。</b><br>申し訳ありません。別の日をお選びください。`;
       await load(); st.step = 'day'; st.day = null; st.warn = null;
@@ -407,18 +409,18 @@ async function submit() {
     renderEntry();
   }
 }
-function dupMsg(r) {
-  const d = dayOf(r.day);
-  return `<b>${esc(r.name)}さんはすでに申し込み済みです。</b><br>${dayNo(r.day)}日目 ${esc(d?.label || '')}（${esc(r.role)}${r.cls ? '・' + esc(r.cls) : ''}）<br>駐車場のご利用は1人1回までです。変更する場合は本部役員へご連絡ください。`;
+function dupMsg(name, dayId) {
+  const d = dayOf(dayId);
+  return `<b>${esc(name)}さんはすでに申し込み済みです。</b><br>${d ? `${dayNo(dayId)}日目 ${esc(d.label)}` : ''}<br>駐車場のご利用は1人1回までです。変更する場合は本部役員へご連絡ください。`;
 }
 async function cancelMine() {
   const r = myRec();
   if (!r || !confirm(`${dayOf(r.day)?.label} の申し込みを取り消しますか？`)) return;
-  if (await del(r.id)) { setMine(null); reset(); }
+  if (await del(r.id)) { setMine(null); mineRec = null; reset(); }
 }
 async function del(id) {
   try {
-    const r = await fetch(`${API}${Q}&id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const r = await fetch(`${API}${QK}&id=${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!r.ok) throw 0;
   } catch { alert('取り消しできませんでした。通信状況を確認してもう一度お試しください。'); return false; }
   await load();
@@ -448,9 +450,14 @@ function renderAdmin() {
     }).join('')}
     <div class="card">
       <h2>申し込み用QRコード</h2>
-      <p class="hint">お便りやLINEで配布してください</p>
+      <p class="hint">お便りやLINEで配布してください（このQRからは申込状況は見えません）</p>
       <div class="qr"><img alt="申し込みページのQRコード" src="https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=8&data=${encodeURIComponent(url)}">
       <div class="url">${esc(url)}</div></div>
+    </div>
+    <div class="card">
+      <h2>ホスト用URL</h2>
+      <p class="hint">申込状況が見られるURLです。役員だけで共有してください</p>
+      <div class="qr"><div class="url" style="font-size:13px">${esc(location.href)}</div></div>
     </div>
     <div class="card">
       <h2>台数の設定</h2>
@@ -467,7 +474,7 @@ function renderAdmin() {
 async function saveCap() {
   const nd = days.map(d => ({ ...d, cap: parseInt(document.querySelector(`[data-cap="${d.id}"]`).value, 10) || 0 }));
   try {
-    const r = await fetch(`${API}/config${Q}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ days: nd }) });
+    const r = await fetch(`${API}/config${QK}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ days: nd }) });
     if (!r.ok) throw 0;
     alert('台数を保存しました');
   } catch { alert('保存できませんでした'); }
@@ -497,7 +504,7 @@ function render() {
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   const d = b.dataset;
-  if (d.tab) { tab = d.tab; load(); render(); window.scrollTo(0, 0); return; }
+  if (d.tab) { if (!isHost) return; tab = d.tab; load(); render(); window.scrollTo(0, 0); return; }
   if (d.day) { if (myRec()) return; st.day = d.day; st.step = 'role'; }
   else if (d.role) { st.role = d.role; st.step = 'cls'; }
   else if (d.cls) { st.cls = d.cls; st.step = 'name'; }

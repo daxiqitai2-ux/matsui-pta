@@ -918,10 +918,13 @@ async function handleArmband(request, env, url) {
 
 
 // ── 授業参観 駐車場の利用希望（1人1回・日ごとの台数上限つき） ──
-// GET    /api/parking?event=X          → { days, records }
-// POST   /api/parking?event=X          → 登録（重複・満車は 409）
-// DELETE /api/parking?event=X&id=Y     → 取消
-// PUT    /api/parking/config?event=X   → 日程・台数の変更（管理）
+// GET    /api/parking?event=X[&mine=ID]   → { days(残数つき), mine }  ※名簿は返さない
+// GET    /api/parking?event=X&key=K       → { days, records }        ※ホスト用（名簿あり）
+// POST   /api/parking?event=X             → 登録（重複・満車は 409）
+// DELETE /api/parking?event=X&id=Y        → 取消（本人はID、ホストはkeyつき）
+// PUT    /api/parking/config?event=X&key=K → 台数の変更（ホストのみ）
+// ホスト用キー：Cloudflareの環境変数 PARKING_ADMIN_KEY（未設定なら下の初期値）
+const PARKING_DEFAULT_KEY = 'matsuichi-host';
 const PARKING_DEFAULT_DAYS = [
   { id: 'd1', label: '11/17(火)', grades: '2年・5年・なかよし', cap: 8 },
   { id: 'd2', label: '11/18(水)', grades: '3年・4年', cap: 8 },
@@ -936,6 +939,7 @@ async function handleParking(request, env, url) {
     status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
   });
   const norm = v => String(v || '').replace(/[\s　]/g, '');
+  const isHost = (url.searchParams.get('key') || '') === (env.PARKING_ADMIN_KEY || PARKING_DEFAULT_KEY);
   const getDays = async () => (await KV.get(cfgKey, 'json')) || PARKING_DEFAULT_DAYS;
   const listAll = async () => {
     const out = [];
@@ -950,6 +954,7 @@ async function handleParking(request, env, url) {
 
   try {
     if (url.pathname === '/api/parking/config' && request.method === 'PUT') {
+      if (!isHost) return json({ error: 'forbidden' }, 403);
       const b = await request.json();
       if (!Array.isArray(b.days) || !b.days.length) return json({ error: 'bad days' }, 400);
       const days = b.days.slice(0, 10).map((d, i) => ({
@@ -964,7 +969,14 @@ async function handleParking(request, env, url) {
     if (url.pathname !== '/api/parking') return json({ error: 'not found' }, 404);
 
     if (request.method === 'GET') {
-      return json({ days: await getDays(), records: await listAll() });
+      const [days, records] = await Promise.all([getDays(), listAll()]);
+      if (isHost) return json({ host: true, days, records });
+      const mineId = (url.searchParams.get('mine') || '').replace(/[^\w-]/g, '');
+      return json({
+        host: false,
+        days: days.map(d => ({ ...d, used: records.filter(r => r.day === d.id).length })),
+        mine: mineId ? (records.find(r => r.id === mineId) || null) : null,
+      });
     }
 
     if (request.method === 'POST') {
@@ -987,7 +999,7 @@ async function handleParking(request, env, url) {
       let all = await listAll();
       if (all.some(r => r.id === rec.id)) return json(all.find(r => r.id === rec.id), 200); // 再送
       const dup = all.find(r => norm(r.name) === norm(rec.name));
-      if (dup) return json({ error: 'dup', rec: dup }, 409);
+      if (dup) return json({ error: 'dup', day: dup.day }, 409);
       if (all.filter(r => r.day === rec.day).length >= day.cap) return json({ error: 'full' }, 409);
 
       await KV.put(prefix + rec.id, '1', { metadata: rec });
@@ -999,7 +1011,7 @@ async function handleParking(request, env, url) {
       const sameName = all.filter(r => norm(r.name) === norm(rec.name));
       if (sameName[0].id !== rec.id) {
         await KV.delete(prefix + rec.id);
-        return json({ error: 'dup', rec: sameName[0] }, 409);
+        return json({ error: 'dup', day: sameName[0].day }, 409);
       }
       const sameDay = all.filter(r => r.day === rec.day);
       if (sameDay.findIndex(r => r.id === rec.id) >= day.cap) {

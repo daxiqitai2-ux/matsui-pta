@@ -233,6 +233,9 @@ export default {
         headers: {'Content-Type': 'text/html;charset=utf-8'},
       });
     }
+    if (url.pathname.startsWith('/api/parking')) {
+      return handleParking(request, env, url);
+    }
     if (url.pathname.startsWith('/api/molkky')) {
       return handleMolkky(request, env, url);
     }
@@ -911,4 +914,109 @@ async function handleArmband(request, env, url) {
   }
 
   return json({ error: 'method not allowed' }, 405);
+}
+
+
+// ── 授業参観 駐車場の利用希望（1人1回・日ごとの台数上限つき） ──
+// GET    /api/parking?event=X          → { days, records }
+// POST   /api/parking?event=X          → 登録（重複・満車は 409）
+// DELETE /api/parking?event=X&id=Y     → 取消
+// PUT    /api/parking/config?event=X   → 日程・台数の変更（管理）
+const PARKING_DEFAULT_DAYS = [
+  { id: 'd1', label: '11/17(火)', grades: '2年・5年・なかよし', cap: 8 },
+  { id: 'd2', label: '11/18(水)', grades: '3年・4年', cap: 8 },
+  { id: 'd3', label: '11/20(金)', grades: '1年・6年', cap: 8 },
+];
+async function handleParking(request, env, url) {
+  const KV = env.HAIYO_KV;
+  const event = (url.searchParams.get('event') || '2gakki').replace(/[^\w-]/g, '').slice(0, 40) || '2gakki';
+  const prefix = `parking:${event}:`;
+  const cfgKey = `parkingcfg:${event}`;
+  const json = (data, status = 200) => new Response(JSON.stringify(data), {
+    status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+  });
+  const norm = v => String(v || '').replace(/[\s　]/g, '');
+  const getDays = async () => (await KV.get(cfgKey, 'json')) || PARKING_DEFAULT_DAYS;
+  const listAll = async () => {
+    const out = [];
+    let cursor;
+    do {
+      const res = await KV.list({ prefix, cursor });
+      for (const k of res.keys) if (k.metadata) out.push(k.metadata);
+      cursor = res.list_complete ? null : res.cursor;
+    } while (cursor);
+    return out.sort((a, b) => a.ts - b.ts || (a.id < b.id ? -1 : 1));
+  };
+
+  try {
+    if (url.pathname === '/api/parking/config' && request.method === 'PUT') {
+      const b = await request.json();
+      if (!Array.isArray(b.days) || !b.days.length) return json({ error: 'bad days' }, 400);
+      const days = b.days.slice(0, 10).map((d, i) => ({
+        id: String(d.id || 'd' + (i + 1)).replace(/[^\w-]/g, '').slice(0, 10),
+        label: String(d.label || '').slice(0, 30),
+        grades: String(d.grades || '').slice(0, 40),
+        cap: Math.max(0, Math.min(200, parseInt(d.cap, 10) || 0)),
+      }));
+      await KV.put(cfgKey, JSON.stringify(days));
+      return json({ days });
+    }
+    if (url.pathname !== '/api/parking') return json({ error: 'not found' }, 404);
+
+    if (request.method === 'GET') {
+      return json({ days: await getDays(), records: await listAll() });
+    }
+
+    if (request.method === 'POST') {
+      const b = await request.json();
+      const s = (v, n) => String(v ?? '').trim().slice(0, n);
+      const rec = {
+        id: s(b.id, 30).replace(/[^\w-]/g, ''),
+        day: s(b.day, 10),
+        role: s(b.role, 30),
+        cls: s(b.cls, 10),
+        name: s(b.name, 40),
+        car: s(b.car, 20),
+        ts: Date.now(),
+      };
+      if (!rec.id || !rec.day || !rec.role || !rec.name) return json({ error: 'missing fields' }, 400);
+      const days = await getDays();
+      const day = days.find(d => d.id === rec.day);
+      if (!day) return json({ error: 'bad day' }, 400);
+
+      let all = await listAll();
+      if (all.some(r => r.id === rec.id)) return json(all.find(r => r.id === rec.id), 200); // 再送
+      const dup = all.find(r => norm(r.name) === norm(rec.name));
+      if (dup) return json({ error: 'dup', rec: dup }, 409);
+      if (all.filter(r => r.day === rec.day).length >= day.cap) return json({ error: 'full' }, 409);
+
+      await KV.put(prefix + rec.id, '1', { metadata: rec });
+
+      // 同時登録の後始末：先着順で上限・重複を超えたら自分の分を取り消す
+      all = await listAll();
+      if (!all.some(r => r.id === rec.id)) all.push(rec);
+      all.sort((a, b) => a.ts - b.ts || (a.id < b.id ? -1 : 1));
+      const sameName = all.filter(r => norm(r.name) === norm(rec.name));
+      if (sameName[0].id !== rec.id) {
+        await KV.delete(prefix + rec.id);
+        return json({ error: 'dup', rec: sameName[0] }, 409);
+      }
+      const sameDay = all.filter(r => r.day === rec.day);
+      if (sameDay.findIndex(r => r.id === rec.id) >= day.cap) {
+        await KV.delete(prefix + rec.id);
+        return json({ error: 'full' }, 409);
+      }
+      return json(rec, 201);
+    }
+
+    if (request.method === 'DELETE') {
+      const id = (url.searchParams.get('id') || '').replace(/[^\w-]/g, '');
+      if (!id) return json({ error: 'missing id' }, 400);
+      await KV.delete(prefix + id);
+      return json({ ok: true });
+    }
+    return json({ error: 'method not allowed' }, 405);
+  } catch (e) {
+    return json({ error: String(e && e.message || e) }, 500);
+  }
 }
